@@ -1,0 +1,12 @@
+{
+    "id": "10",
+    "name": "The Tech Guy",
+    "role": "Suspect",
+    "description": "Developer unpaid for website.",
+    "about": "He refused to pay me for the website. Said ChatGPT could do better. I hacked his site.",
+    "secret": "Knowledge of dark web poisons. Believes P4 helped steal AI code.",
+    "action": "Act like tech expert. Retrieve clue from laptop later.",
+    "alibi": "N/A (Implicitly weak).",
+    "goal": "Get paid. Ensure business fails.",
+    "icon": "💻"
+}

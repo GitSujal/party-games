@@ -1,0 +1,19 @@
+name = "murder-mystery"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "out"
+
+
+# D1 Database binding
+[[d1_databases]]
+binding = "murder_mystery_db"
+database_name = "murder-mystery-db"
+database_id = "e4bbeb9e-d1ad-4e4d-b387-2615bc1b0adc"
+
+# R2 Bucket binding (optional - for large assets)
+# [[r2_buckets]]
+# binding = "ASSETS"
+# bucket_name = "murder-mystery-assets"
+
+[vars]
+ENVIRONMENT = "production"
+IP_PLAYER_LIMIT = "true"

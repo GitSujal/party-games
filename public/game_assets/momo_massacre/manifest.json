@@ -1,0 +1,77 @@
+{
+    "id": "momo_massacre",
+    "name": "The Momo Massacre",
+    "description": "A murder mystery dinner party at a Christmas celebration.",
+    "minPlayers": 3,
+    "maxPlayers": 13,
+    "victimCharacterId": "1",
+    "thumbnail": "media/scenes/Game_Setting.png",
+    "phases": [
+        {
+            "id": "LOBBY",
+            "type": "lobby",
+            "next": "INTRO"
+        },
+        {
+            "id": "INTRO",
+            "type": "cinematic",
+            "background": "media/scenes/Game_Setting.png",
+            "audio": "media/audio/intro.wav",
+            "textKey": "intro",
+            "title": "The Setting",
+            "next": "TOAST"
+        },
+        {
+            "id": "TOAST",
+            "type": "toast",
+            "victimImage": "media/characters/Momo_King.png",
+            "toastImage": "media/scenes/Toast.png",
+            "steps": [
+                {
+                    "id": "INTRO",
+                    "title": "Meet The Momo King",
+                    "textKey": "victimIntro",
+                    "instruction": "Introduce the man of the hour!"
+                },
+                {
+                    "id": "SPEECH",
+                    "title": "The Royal Toast",
+                    "textKey": "victimToast",
+                    "instruction": "Silence, everyone! The King speaks!"
+                }
+            ],
+            "next": "MURDER"
+        },
+        {
+            "id": "MURDER",
+            "type": "announcement",
+            "headline": "A Murder Has Occurred!",
+            "subtext": "The Momo King is dead. He has been poisoned.",
+            "instruction": "Lock the doors. No one leaves until we find the killer. Everyone here is a suspect.",
+            "next": "INTRODUCTIONS"
+        },
+        {
+            "id": "INTRODUCTIONS",
+            "type": "carousel",
+            "title": "Meet The Suspects",
+            "excludeCharacterIds": [
+                "1"
+            ],
+            "instruction": "Please read your introduction aloud to the group.",
+            "next": "PLAYING"
+        },
+        {
+            "id": "PLAYING",
+            "type": "investigation",
+            "victimName": "The Momo King",
+            "victimImage": "media/characters/Momo_King.png",
+            "next": "FINISHED"
+        },
+        {
+            "id": "FINISHED",
+            "type": "finale",
+            "headline": "Game Over",
+            "subtext": "The investigation has concluded. Discuss the outcome! Who was the killer?"
+        }
+    ]
+}

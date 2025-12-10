@@ -1,0 +1,12 @@
+{
+    "id": "6",
+    "name": "The Chemist",
+    "role": "Suspect",
+    "description": "Warned about preservatives.",
+    "about": "He ignored my advice on shelf life. Consumers will get sick! He threatened to cut me out.",
+    "secret": "Access to undetectable poisons. Saw examining Timur oil label in kitchen.",
+    "action": "Claim professional oath prevents you from harming.",
+    "alibi": "Examining ingredients in kitchen.",
+    "goal": "Protect consumers. Get credit.",
+    "icon": "⚗️"
+}

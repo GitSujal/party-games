@@ -1,0 +1,12 @@
+{
+    "games": [
+        {
+            "id": "momo_massacre",
+            "name": "The Momo Massacre",
+            "description": "A murder mystery dinner party at a Christmas celebration.",
+            "thumbnail": "momo_massacre/media/scenes/cover.png",
+            "minPlayers": 3,
+            "maxPlayers": 13
+        }
+    ]
+}

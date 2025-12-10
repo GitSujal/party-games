@@ -1,0 +1,29 @@
+{
+    "name": "murder-mystery",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "npm run build && npx wrangler pages dev out --port 3000 --binding murder_mystery_db=murder-mystery-db --d1 murder-mystery-db",
+        "build": "next build",
+        "start": "next start",
+        "format": "prettier --write .",
+        "deploy:local": "npm run build && npx wrangler pages dev out --port 3000 --binding murder_mystery_db=murder-mystery-db --d1 murder-mystery-db",
+        "deploy": "npm run build && npx wrangler pages deploy out",
+        "db:init": "npx wrangler d1 execute murder-mystery-db --local --file=schema.sql"
+    },
+    "dependencies": {
+        "lucide-react": "^0.556.0",
+        "next": "latest",
+        "qrcode": "^1.5.3",
+        "react": "^19.2.1",
+        "react-dom": "latest",
+        "react-markdown": "^10.1.0",
+        "swr": "^2.3.7"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3.3.3",
+        "eslint": "^8.57.1",
+        "eslint-config-next": "latest",
+        "wrangler": "^4.53.0"
+    }
+}

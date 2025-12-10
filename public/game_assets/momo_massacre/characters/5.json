@@ -1,0 +1,13 @@
+{
+    "id": "5",
+    "name": "The Nutritionist",
+    "role": "Suspect",
+    "description": "Warned about health risks.",
+    "about": "I am **The Nutritionist**! 🥬 I was hired by the Momo King to ensure his 'Best Momo of all Time' recipe was healthy and nutritious. I spent weeks analyzing ingredients and suggesting alternatives! But did he listen? Absolutely not! He threw out my advice and insisted on using unhealthy ingredients just to enhance the flavor. 😠 I felt disrespected, and I believe his disregard for health could have serious, negative consequences for consumers. I even **threatened to report him to the FDA** if he didn't change the recipe. I did not want my name associated with something so irresponsible!",
+    "secret": "I am the Momo King's personal nutritionist and have complete access to his confidential medical history. I know about his allergies, his health conditions, and the specific medicine he takes. This means I could have easily planned a perfect, untraceable poison based on his existing vulnerabilities. My only alibi is that I went outside to take a cold, important call when the lights went out.",
+    "action": "Divert suspicion to **The Chemist**, claiming you suspect they provided the chemical additives that worsened the recipe's nutritional profile. Tell everyone that this is a complicated poison and only chemist could have access to such substances.",
+    "alibi": "Outside taking a cold call.",
+    "goal": "Ensure that the 'Best Momo of all Time' recipe is not launched and that the Momo King is held accountable for his reckless disregard for health and nutrition.",
+    "tips": "**Defense:** Use the information you gained outside (if you heard **The Legal Advisor** arguing) to provide an *indirect* clue about someone else.",
+    "icon": "🍎"
+}

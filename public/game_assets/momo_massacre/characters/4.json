@@ -1,0 +1,12 @@
+{
+    "id": "4",
+    "name": "The Food Scientist",
+    "role": "Suspect",
+    "description": "Used for data, no credit given.",
+    "about": "I spent months analyzing ingredients. Victim registered patents without me. I feel used.",
+    "secret": "Knowledge of chemical compounds. Was testing acidity of chutney near crime scene.",
+    "action": "Challenge anyone discussing poison compounds.",
+    "alibi": "Washing chili off hands in bathroom (weak).",
+    "goal": "Expose unethical practices. Get credit.",
+    "icon": "🔬"
+}

@@ -1,0 +1,12 @@
+{
+    "id": "7",
+    "name": "The Legal Advisor",
+    "role": "Suspect",
+    "description": "Lawyer seeing unethical practices.",
+    "about": "He ignored my legal advice and registered patents unethically. I threatened authorities.",
+    "secret": "Access to incriminating documents. Could blackmail him.",
+    "action": "Act like a lawyer, question others aggressively.",
+    "alibi": "Arguing on phone with P3.",
+    "goal": "Stop launch. Protect reputation.",
+    "icon": "⚖️"
+}

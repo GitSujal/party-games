@@ -1,0 +1,12 @@
+{
+    "id": "8",
+    "name": "The Investor",
+    "role": "Suspect",
+    "description": "Money man being cut out.",
+    "about": "He used my name to get other investors, then planned to cut me out. I want my seat at the table.",
+    "secret": "Resources to hire hitman. Seen threatening victim 'business exists only if I am in'.",
+    "action": "Demand share of business. Focus on finances.",
+    "alibi": "Online board meeting.",
+    "goal": "Get into the deal or sink the business.",
+    "icon": "💰"
+}
