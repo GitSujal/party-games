@@ -60,7 +60,7 @@ export default function PhaseIntro({
                     <button
                         onClick={() => {
                             const audio = document.getElementById('introAudio');
-                            if (audio) audio.play().catch(e => alert("Click again to play - browser blocked autoplay"));
+                            if (audio) audio.play().catch(() => alert("Click again to play - browser blocked autoplay"));
                         }}
                         className="btn"
                         style={{ fontSize: '1.2rem', padding: '10px 30px' }}

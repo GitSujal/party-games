@@ -96,6 +96,8 @@ npm run deploy
 | Variable | Dev Value | Prod Value | Description |
 |----------|-----------|------------|-------------|
 | `IP_PLAYER_LIMIT` | `false` | `true` | Limit one player per IP |
+| `ALLOWED_ORIGIN` | `*` | `https://yourdomain.pages.dev` | CORS origin restriction |
+| `ENVIRONMENT` | `development` | `production` | Environment mode |
 
 ## Project Structure
 
@@ -111,6 +113,59 @@ npm run deploy
 ├── schema.sql              # D1 database schema
 └── wrangler.toml           # Cloudflare config
 ```
+
+## Production Deployment
+
+### Production Configuration
+
+1. **Update `wrangler.toml`**
+   ```toml
+   [vars]
+   ENVIRONMENT = "production"
+   IP_PLAYER_LIMIT = "true"
+   ALLOWED_ORIGIN = "https://yourdomain.pages.dev"
+   ```
+
+2. **Run migration** (if updating from older version)
+   ```bash
+   npx wrangler d1 execute murder-mystery-db --remote --file=migration.sql
+   ```
+
+   **⚠️ Important**: This migration adds security features including PIN hashing. Existing games with plaintext PINs will need to be recreated.
+
+3. **Test and deploy**
+   ```bash
+   npm test
+   npm run build
+   npm run deploy
+   ```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENVIRONMENT` | Environment mode | `production` |
+| `IP_PLAYER_LIMIT` | Limit one player per IP | `true` |
+| `ALLOWED_ORIGIN` | CORS allowed origin | `*` (dev) |
+
+## Testing
+
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+## Security Features
+
+- ✅ Cryptographic ID/PIN generation (crypto.randomUUID)
+- ✅ SHA-256 PIN hashing
+- ✅ Comprehensive input validation
+- ✅ Rate limiting (5-60 req/min per endpoint)
+- ✅ Security headers (CSP, X-Frame-Options, etc.)
+- ✅ Error boundaries and exponential backoff
+- ✅ Session-based storage (sessionStorage)
+- ✅ Automatic game cleanup (24h TTL)
 
 ## License
 

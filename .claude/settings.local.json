@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run db:init:*)",
+      "Bash(npx wrangler d1 execute:*)",
+      "Bash(npm test)",
+      "Bash(del testscomponentsErrorBoundary.test.jsx)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -26,14 +26,20 @@ export default function Player() {
 
     const [activeTab, setActiveTab] = useState('character');
 
-    // Poll game state from API
+    // Poll game state from API with exponential backoff on errors
     useEffect(() => {
         if (!id) return;
 
+        let interval;
+        let errorCount = 0;
+        const baseInterval = 2000; // 2 seconds base polling
+        const maxInterval = 10000; // Max 10 seconds
+        const maxErrors = 5;
+
         const fetchState = async () => {
             try {
-                // Get player's game ID from localStorage or query params
-                const storedGameId = localStorage.getItem('gameId');
+                // Get player's game ID from sessionStorage or localStorage
+                const storedGameId = sessionStorage.getItem('gameId') || localStorage.getItem('gameId');
                 if (!storedGameId) {
                     setError('Game ID not found. Please rejoin the game.');
                     return;
@@ -41,19 +47,46 @@ export default function Player() {
 
                 const state = await api.getGameState(storedGameId);
                 setGameState(state);
+                setError(null);
+                errorCount = 0; // Reset error count on success
 
                 // Load game data if not already loaded
                 if (state.gameType && !gameType) {
                     setGameType(state.gameType);
                 }
             } catch (err) {
-                setError(err.message);
+                errorCount++;
+                if (errorCount >= maxErrors) {
+                    setError(`Connection failed: ${err.message}`);
+                    clearInterval(interval); // Stop polling after max errors
+                } else {
+                    console.warn(`Fetch error (${errorCount}/${maxErrors}):`, err.message);
+                }
             }
         };
 
-        fetchState();
-        const interval = setInterval(fetchState, 1000);
-        return () => clearInterval(interval);
+        // Calculate interval with exponential backoff
+        const getInterval = () => {
+            if (errorCount === 0) return baseInterval;
+            return Math.min(baseInterval * Math.pow(2, errorCount - 1), maxInterval);
+        };
+
+        fetchState(); // Initial fetch
+
+        // Dynamic interval based on error count
+        const scheduleNext = () => {
+            interval = setTimeout(() => {
+                fetchState().then(() => {
+                    if (errorCount < maxErrors) {
+                        scheduleNext();
+                    }
+                });
+            }, getInterval());
+        };
+
+        scheduleNext();
+
+        return () => clearTimeout(interval);
     }, [id, gameType]);
 
     // Load game data when game type is known
@@ -71,7 +104,7 @@ export default function Player() {
     if (!gameState) return <div className="container" style={{ textAlign: 'center', marginTop: '50px' }}>Connecting to game...</div>;
     if (!gameData) return <div className="container" style={{ textAlign: 'center', marginTop: '50px' }}>Loading game data...</div>;
 
-    const { manifest, storyline, characters, clues } = gameData;
+    const { storyline, characters, clues } = gameData;
     const player = gameState.players?.find(p => p.id === id);
 
     if (!player) {

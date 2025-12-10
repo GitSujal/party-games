@@ -26,8 +26,8 @@ export default function JoinForm({ initialGameId = '' }) {
                 if (data.player.name.toLowerCase() !== name.toLowerCase()) {
                     alert(`Welcome back, ${data.player.name}! Recovering your session...`);
                 }
-                localStorage.setItem('playerId', data.player.id);
-                localStorage.setItem('gameId', inputGameId); // Store gameId for player page
+                sessionStorage.setItem('playerId', data.player.id);
+                sessionStorage.setItem('gameId', inputGameId); // Store gameId for player page
                 router.push(`/player/${data.player.id}`);
             }
         } catch (err) {

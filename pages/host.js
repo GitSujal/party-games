@@ -36,13 +36,13 @@ export default function Host() {
     const [toastStep, setToastStep] = useState('INTRO');
     const [suspectIndex, setSuspectIndex] = useState(0);
 
-    // Load host PIN from URL or localStorage
+    // Load host PIN from URL or sessionStorage
     useEffect(() => {
         if (queryPin) {
             setHostPin(queryPin);
-            localStorage.setItem('hostPin', queryPin);
+            sessionStorage.setItem('hostPin', queryPin);
         } else {
-            const stored = localStorage.getItem('hostPin');
+            const stored = sessionStorage.getItem('hostPin');
             if (stored) setHostPin(stored);
         }
         if (queryGameType) {
@@ -59,22 +59,55 @@ export default function Host() {
         }
     }, [gameType]);
 
-    // Poll game state from API
+    // Poll game state from API with exponential backoff on errors
     useEffect(() => {
         if (!queryGameId) return;
+
+        let interval;
+        let errorCount = 0;
+        const baseInterval = 2000; // 2 seconds base polling
+        const maxInterval = 10000; // Max 10 seconds
+        const maxErrors = 5;
 
         const fetchState = async () => {
             try {
                 const state = await api.getGameState(queryGameId);
                 setGameState(state);
+                setError(null);
+                errorCount = 0; // Reset error count on success
             } catch (err) {
-                setError(err.message);
+                errorCount++;
+                if (errorCount >= maxErrors) {
+                    setError(`Connection failed: ${err.message}`);
+                    clearInterval(interval); // Stop polling after max errors
+                } else {
+                    console.warn(`Fetch error (${errorCount}/${maxErrors}):`, err.message);
+                }
             }
         };
 
-        fetchState();
-        const interval = setInterval(fetchState, 1000);
-        return () => clearInterval(interval);
+        // Calculate interval with exponential backoff
+        const getInterval = () => {
+            if (errorCount === 0) return baseInterval;
+            return Math.min(baseInterval * Math.pow(2, errorCount - 1), maxInterval);
+        };
+
+        fetchState(); // Initial fetch
+
+        // Dynamic interval based on error count
+        const scheduleNext = () => {
+            interval = setTimeout(() => {
+                fetchState().then(() => {
+                    if (errorCount < maxErrors) {
+                        scheduleNext();
+                    }
+                });
+            }, getInterval());
+        };
+
+        scheduleNext();
+
+        return () => clearTimeout(interval);
     }, [queryGameId]);
 
     // Generate QR Code
@@ -112,11 +145,10 @@ export default function Host() {
     if (!gameData) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#888' }}>Loading game data...</div>;
     if (!gameState) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#888' }}>Connecting to game...</div>;
 
-    const { manifest, storyline, characters, clues } = gameData;
+    const { manifest, characters, clues } = gameData;
     const connectedPlayers = gameState.players?.filter(p => !p.isHost) || [];
     const effectiveGameId = gameState.gameId || queryGameId;
     const currentPhaseConfig = getPhaseConfig(manifest, gameState.phase);
-    const assetBase = `/game_assets/${gameType}`;
 
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000', color: '#fff', overflow: 'hidden' }}>

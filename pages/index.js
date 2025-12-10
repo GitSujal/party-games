@@ -29,9 +29,10 @@ export default function Home() {
         const data = await api.createSession(selectedGame, minPlayers, 'HOST');
 
         if (data.gameId && data.hostPin) {
-            localStorage.setItem('playerId', data.player.id);
-            localStorage.setItem('hostPin', data.hostPin);
-            localStorage.setItem('gameId', data.gameId);
+            // Use sessionStorage for sensitive data (PIN)
+            sessionStorage.setItem('playerId', data.player.id);
+            sessionStorage.setItem('hostPin', data.hostPin);
+            sessionStorage.setItem('gameId', data.gameId);
             router.push(`/host?gameId=${data.gameId}&pin=${data.hostPin}&gameType=${selectedGame}`);
         } else {
             throw new Error("Invalid response from server");

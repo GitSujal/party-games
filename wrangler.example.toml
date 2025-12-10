@@ -7,7 +7,7 @@ pages_build_output_dir = "out"
 [[d1_databases]]
 binding = "murder_mystery_db"
 database_name = "murder-mystery-db"
-database_id = "e4bbeb9e-d1ad-4e4d-b387-2615bc1b0adc"  # TODO: Replace with your database ID from `wrangler d1 list`
+database_id = "YOUR_DATABASE_ID_HERE"  # Get from: wrangler d1 list
 
 # R2 Bucket binding (optional - for large assets)
 # [[r2_buckets]]
@@ -15,6 +15,6 @@ database_id = "e4bbeb9e-d1ad-4e4d-b387-2615bc1b0adc"  # TODO: Replace with your 
 # bucket_name = "murder-mystery-assets"
 
 [vars]
-ENVIRONMENT = "production"
-IP_PLAYER_LIMIT = "true"
-# ALLOWED_ORIGIN = "https://yourdomain.pages.dev"  # Uncomment and set for production CORS
+ENVIRONMENT = "development"
+IP_PLAYER_LIMIT = "false"  # Set to "true" in production
+# ALLOWED_ORIGIN = "https://yourdomain.pages.dev"  # Uncomment for production CORS restriction
