@@ -111,7 +111,14 @@ export default function Player() {
         return <div className="container">Player not found or game reset. <a href="/">Go Home</a></div>;
     }
 
+    // Validate character exists and assignment is valid
     const character = characters.find(c => c.id === player.characterId);
+    if (player.characterId && !character) {
+        console.error(`Character ${player.characterId} not found in manifest`);
+        return <div className="container">
+            Invalid character assignment. Please contact the host. <a href="/">Go Home</a>
+        </div>;
+    }
     const revealedClues = clues.filter(c => (gameState.revealedClues || []).includes(c.id));
     const assetBase = `/game_assets/${gameType}`;
 

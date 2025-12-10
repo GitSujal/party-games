@@ -1,0 +1,15 @@
+# Development Environment Variables
+# Copy this file to .dev.vars and fill in your values
+
+# Environment mode (development|production)
+ENVIRONMENT=development
+
+# Limit one player per IP address (true|false)
+IP_PLAYER_LIMIT=false
+
+# CORS allowed origin (* for dev, specific domain for production)
+ALLOWED_ORIGIN=*
+
+# Secret key for cron job authentication (REQUIRED - generate a secure random string)
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+CRON_SECRET=your-secure-random-secret-here

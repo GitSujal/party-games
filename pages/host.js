@@ -14,7 +14,7 @@ import PhaseLobby from '../components/PhaseLobby';
 
 export default function Host() {
     const router = useRouter();
-    const { gameId: queryGameId, pin: queryPin, gameType: queryGameType } = router.query;
+    const { gameId: queryGameId } = router.query;
 
     // Game Data (loaded from static assets)
     const [gameData, setGameData] = useState(null);
@@ -36,19 +36,19 @@ export default function Host() {
     const [toastStep, setToastStep] = useState('INTRO');
     const [suspectIndex, setSuspectIndex] = useState(0);
 
-    // Load host PIN from URL or sessionStorage
+    // Load host PIN and game type from sessionStorage only (never from URL)
     useEffect(() => {
-        if (queryPin) {
-            setHostPin(queryPin);
-            sessionStorage.setItem('hostPin', queryPin);
-        } else {
-            const stored = sessionStorage.getItem('hostPin');
-            if (stored) setHostPin(stored);
+        const storedPin = sessionStorage.getItem('hostPin');
+        const storedGameType = sessionStorage.getItem('gameType');
+
+        if (storedPin) setHostPin(storedPin);
+        if (storedGameType) setGameType(storedGameType);
+
+        // Security: Redirect to home if no PIN found
+        if (!storedPin && queryGameId) {
+            router.push('/');
         }
-        if (queryGameType) {
-            setGameType(queryGameType);
-        }
-    }, [queryPin, queryGameType]);
+    }, [queryGameId, router]);
 
     // Load game data from static assets
     useEffect(() => {

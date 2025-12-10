@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 
 /**
  * PhaseCarousel - Data-driven suspect introduction carousel
@@ -14,6 +15,22 @@ export default function PhaseCarousel({
     onNext,
     onFinish
 }) {
+    // Keyboard navigation
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowLeft' && suspectIndex > 0) {
+                onPrev();
+            } else if (e.key === 'ArrowRight' && suspectIndex < totalSuspects - 1) {
+                onNext();
+            } else if (e.key === 'Enter' && suspectIndex === totalSuspects - 1) {
+                onFinish();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [suspectIndex, totalSuspects, onPrev, onNext, onFinish]);
+
     if (!suspect || !suspect.character) return null;
 
     const { character, player } = suspect;
@@ -51,7 +68,12 @@ export default function PhaseCarousel({
                         fontSize: '1.5rem', lineHeight: '1.8', color: '#ddd',
                         background: '#222', padding: '30px', borderRadius: '15px', borderLeft: '4px solid #61dafb'
                     }}>
-                        <div dangerouslySetInnerHTML={{ __html: (character.about || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                        <div dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(
+                                (character.about || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
+                                { ALLOWED_TAGS: ['strong', 'em', 'p', 'br'], ALLOWED_ATTR: [] }
+                            )
+                        }} />
                     </div>
 
                     <div style={{ marginTop: '20px', color: '#888', fontStyle: 'italic' }}>
@@ -74,6 +96,7 @@ export default function PhaseCarousel({
                 <button
                     onClick={onPrev}
                     disabled={suspectIndex === 0}
+                    aria-label="Previous suspect"
                     style={{ background: 'transparent', border: '1px solid #444', color: suspectIndex === 0 ? '#444' : '#fff', padding: '10px 20px', borderRadius: '5px', cursor: suspectIndex === 0 ? 'default' : 'pointer' }}
                 >
                     &larr; Previous
@@ -86,6 +109,7 @@ export default function PhaseCarousel({
                 {suspectIndex < totalSuspects - 1 ? (
                     <button
                         onClick={onNext}
+                        aria-label="Next suspect"
                         className="btn"
                         style={{ padding: '10px 30px', fontSize: '1.2rem' }}
                     >
@@ -94,6 +118,7 @@ export default function PhaseCarousel({
                 ) : (
                     <button
                         onClick={onFinish}
+                        aria-label="Begin investigation"
                         className="btn"
                         style={{ padding: '10px 30px', fontSize: '1.2rem', background: '#d62828' }}
                     >

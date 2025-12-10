@@ -15,6 +15,7 @@
         "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
+        "dompurify": "^3.3.1",
         "lucide-react": "^0.556.0",
         "next": "latest",
         "qrcode": "^1.5.3",

@@ -1,0 +1,30 @@
+name = "murder-mystery"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "out"
+
+
+# D1 Database binding
+# IMPORTANT: Set this to your production database ID
+[[d1_databases]]
+binding = "murder_mystery_db"
+database_name = "murder-mystery-db"
+database_id = "YOUR_PRODUCTION_DATABASE_ID"  # Get from: wrangler d1 list
+
+# R2 Bucket binding (optional - for large assets)
+# [[r2_buckets]]
+# binding = "ASSETS"
+# bucket_name = "murder-mystery-assets"
+
+# Production environment variables
+[vars]
+ENVIRONMENT = "production"
+IP_PLAYER_LIMIT = "true"
+ALLOWED_ORIGIN = "https://yourdomain.pages.dev"  # REQUIRED: Set to your actual domain
+
+# Production Secrets (set via Cloudflare Dashboard or wrangler secret)
+# CRON_SECRET - Set via: wrangler secret put CRON_SECRET
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Cron trigger for game cleanup (runs every hour)
+[[triggers.crons]]
+cron = "0 * * * *"  # Every hour

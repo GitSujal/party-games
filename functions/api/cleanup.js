@@ -10,19 +10,26 @@
 export async function onRequest(context) {
     const { request, env } = context;
 
-    // Security: Only allow cron triggers or requests with auth header
-    const authHeader = request.headers.get('X-Cron-Auth');
-    const expectedAuth = env.CRON_SECRET || 'default-secret-change-me';
-
-    // Check if it's a cron trigger or has valid auth
+    // Security: Only allow cron triggers or requests with valid auth header
     const isCronTrigger = request.headers.get('CF-Worker-Cron') !== null;
-    const hasValidAuth = authHeader === expectedAuth;
 
-    if (!isCronTrigger && !hasValidAuth) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' }
-        });
+    // Validate CRON_SECRET is configured
+    if (!isCronTrigger) {
+        if (!env.CRON_SECRET) {
+            console.error('CRON_SECRET not configured - rejecting manual trigger');
+            return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        const authHeader = request.headers.get('X-Cron-Auth');
+        if (authHeader !== env.CRON_SECRET) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
     }
 
     const db = env.murder_mystery_db;

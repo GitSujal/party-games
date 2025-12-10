@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 
 export default function PhaseIntroductions({
     character,
@@ -37,7 +38,12 @@ export default function PhaseIntroductions({
                         fontSize: '1.5rem', lineHeight: '1.8', color: '#ddd',
                         background: '#222', padding: '30px', borderRadius: '15px', borderLeft: '4px solid #61dafb'
                     }}>
-                        <div dangerouslySetInnerHTML={{ __html: character.about.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                        <div dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(
+                                character.about.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
+                                { ALLOWED_TAGS: ['strong', 'em', 'p', 'br'], ALLOWED_ATTR: [] }
+                            )
+                        }} />
                     </div>
 
                     <div style={{ marginTop: '20px', color: '#888', fontStyle: 'italic' }}>

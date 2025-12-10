@@ -10,7 +10,8 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(python -m json.tool:*)"
     ],
     "deny": [],
     "ask": []

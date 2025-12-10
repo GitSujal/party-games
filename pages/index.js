@@ -1,4 +1,3 @@
-import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
@@ -7,6 +6,7 @@ import { loadGameRegistry } from '../lib/gameLoader';
 import * as api from '../lib/apiClient';
 
 // Components
+import SEOHead from '../components/SEOHead';
 import LandingCard from '../components/LandingCard';
 import HostSetupModal from '../components/HostSetupModal';
 import GuideModal from '../components/GuideModal';
@@ -29,11 +29,12 @@ export default function Home() {
         const data = await api.createSession(selectedGame, minPlayers, 'HOST');
 
         if (data.gameId && data.hostPin) {
-            // Use sessionStorage for sensitive data (PIN)
+            // Store sensitive data in sessionStorage only (never in URL)
             sessionStorage.setItem('playerId', data.player.id);
             sessionStorage.setItem('hostPin', data.hostPin);
             sessionStorage.setItem('gameId', data.gameId);
-            router.push(`/host?gameId=${data.gameId}&pin=${data.hostPin}&gameType=${selectedGame}`);
+            sessionStorage.setItem('gameType', selectedGame);
+            router.push(`/host?gameId=${data.gameId}`);
         } else {
             throw new Error("Invalid response from server");
         }
@@ -53,10 +54,7 @@ export default function Home() {
 
     return (
         <div style={containerStyle}>
-            <Head>
-                <title>Murder Mystery Platform</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-            </Head>
+            <SEOHead />
 
             <LandingCard
                 onJoinGame={() => router.push('/join')}
