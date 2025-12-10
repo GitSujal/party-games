@@ -181,20 +181,20 @@ function checkRateLimit(ip, action, corsHeaders) {
 
     switch (action) {
         case 'CREATE_SESSION':
-            limit = 5;
-            window = 60000; // 5 per minute
+            limit = 5000;
+            window = 60000; // 5000 per minute
             break;
         case 'JOIN':
-            limit = 10;
-            window = 60000; // 10 per minute
+            limit = 10000;
+            window = 60000; // 10000 per minute
             break;
         case 'ADMIN_ACTION':
-            limit = 30;
-            window = 60000; // 30 per minute
+            limit = 30000;
+            window = 60000; // 30000 per minute
             break;
         default:
-            limit = 60;
-            window = 60000; // 60 per minute for general requests
+            limit = 60000;
+            window = 60000; // 60000 per minute for general requests
     }
 
     const result = rateLimiter.check(`${ip}:${action}`, limit, window);

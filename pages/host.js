@@ -26,6 +26,7 @@ export default function Host() {
 
     // UI State
     const [qrSrc, setQrSrc] = useState('');
+    const [joinUrl, setJoinUrl] = useState('');
     const [hostPin, setHostPin] = useState('');
     const [showPin, setShowPin] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -110,11 +111,12 @@ export default function Host() {
         return () => clearTimeout(interval);
     }, [queryGameId]);
 
-    // Generate QR Code
+    // Generate QR Code and Join URL
     useEffect(() => {
         if (queryGameId) {
-            const joinUrl = `${window.location.origin}/join?gameId=${queryGameId}`;
-            QRCode.toDataURL(joinUrl, { margin: 1, width: 400 }).then(setQrSrc);
+            const url = `${window.location.origin}/join?gameId=${queryGameId}`;
+            setJoinUrl(url);
+            QRCode.toDataURL(url, { margin: 1, width: 400 }).then(setQrSrc);
         }
     }, [queryGameId]);
 
@@ -199,7 +201,7 @@ export default function Host() {
                             minPlayers={gameState.minPlayers}
                             players={connectedPlayers}
                             qrSrc={qrSrc}
-                            localIp={window.location.hostname}
+                            joinUrl={joinUrl}
                             manifest={manifest}
                             onStart={() => performAction('SET_PHASE', { phase: currentPhaseConfig?.next || 'INTRO' })}
                         />
@@ -235,7 +237,7 @@ export default function Host() {
                     onAction={performAction}
                     gameId={effectiveGameId}
                     qrSrc={qrSrc}
-                    localIp={window.location.hostname}
+                    joinUrl={joinUrl}
                 />
 
                 {/* Overlay */}

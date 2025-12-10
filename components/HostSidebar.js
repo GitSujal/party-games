@@ -11,7 +11,7 @@ export default function HostSidebar({
     onAction,
     gameId,
     qrSrc,
-    localIp
+    joinUrl
 }) {
     const unassignedCharacters = characters.filter(c =>
         !players.find(p => p.characterId === c.id)
@@ -42,11 +42,13 @@ export default function HostSidebar({
                     )}
                     <div style={{ fontSize: '0.8rem', color: '#888' }}>Scan to Join</div>
                     <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', color: '#fff', marginTop: '5px' }}>{gameId}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '10px' }}>
-                        <a href={`http://${localIp}:3000/join?gameId=${gameId}`} target="_blank" rel="noreferrer" style={{ color: '#61dafb', wordBreak: 'break-all' }}>
-                            http://{localIp}:3000/join?gameId={gameId}
-                        </a>
-                    </div>
+                    {joinUrl && (
+                        <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '10px' }}>
+                            <a href={joinUrl} target="_blank" rel="noreferrer" style={{ color: '#61dafb', wordBreak: 'break-all' }}>
+                                {joinUrl}
+                            </a>
+                        </div>
+                    )}
                 </div>
 
                 {/* Player List */}

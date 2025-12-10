@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, Play } from 'lucide-react';
 
-export default function PhaseLobby({ gameId, minPlayers, players, qrSrc, localIp, onStart, manifest }) {
+export default function PhaseLobby({ gameId, minPlayers, players, qrSrc, joinUrl, onStart, manifest }) {
     const canStart = players.length >= (minPlayers || 4);
     const gameName = manifest?.name || 'Murder Mystery';
 
@@ -19,11 +19,13 @@ export default function PhaseLobby({ gameId, minPlayers, players, qrSrc, localIp
                 )}
                 <h1 style={{ marginTop: '20px', fontSize: '3rem', fontFamily: 'monospace' }}>{gameId}</h1>
                 <p style={{ fontSize: '1.5rem', color: '#888', marginBottom: '5px' }}>scan to join</p>
-                <p style={{ fontSize: '1rem', color: '#666' }}>
-                    or visit <a href={`http://${localIp}:3000/join?gameId=${gameId}`} target="_blank" rel="noreferrer" style={{ color: '#61dafb', textDecoration: 'underline' }}>
-                        http://{localIp}:3000/join?gameId={gameId}
-                    </a>
-                </p>
+                {joinUrl && (
+                    <p style={{ fontSize: '1rem', color: '#666' }}>
+                        or visit <a href={joinUrl} target="_blank" rel="noreferrer" style={{ color: '#61dafb', textDecoration: 'underline' }}>
+                            {joinUrl}
+                        </a>
+                    </p>
+                )}
                 <div style={{ marginTop: '20px', color: players.length < (minPlayers || 4) ? '#d62828' : '#28d685' }}>
                     Players: {players.length} / {minPlayers || 4}
                 </div>
