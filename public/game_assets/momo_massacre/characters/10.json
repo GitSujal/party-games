@@ -2,11 +2,14 @@
     "id": "10",
     "name": "The Tech Guy",
     "role": "Suspect",
-    "description": "Developer unpaid for website.",
-    "about": "He refused to pay me for the website. Said ChatGPT could do better. I hacked his site.",
-    "secret": "Knowledge of dark web poisons. Believes P4 helped steal AI code.",
-    "action": "Act like tech expert. Retrieve clue from laptop later.",
-    "alibi": "N/A (Implicitly weak).",
-    "goal": "Get paid. Ensure business fails.",
-    "icon": "💻"
+    "isOptional": true,
+    "description": "Web developer who was refused payment and publicly humiliated, then retaliated by hacking the Momo King's website.",
+    "about": "I am **The Tech Guy**! 💻 I spent weeks designing and developing the website for the Momo King's business, making it look great. And what was my reward? He **refused to pay me** the agreed amount, claiming he could have done a better job using ChatGPT! That is a public humiliation! I felt so enraged that I publicly told him I would use all means necessary to stop his business. In fact, I hacked his entire website and took it down just yesterday! Now he is threatening to sue me for cybercrime! I will make sure his business never takes off!",
+    "secret": "I have the technical knowledge to navigate the dark web and understand how to buy and use illegal substances and poisons. This means I had the perfect means to acquire the poison. I believe **Player 4 (The Food Scientist)** helped the Momo King steal the AI code that **Player 11 (The AI Developer)** originally wrote.",
+    "action": "Act like a tech expert. You must attempt to 'hack' the Momo King's laptop (ask the Host to give you the clue you retrieved). After 20 minutes, announce that you have successfully bypassed the Momo King's security and demand the Host hand you **Clue #1: The Discarded Text**.",
+    "alibi": "You were working on your computer during the lights-out moment.",
+    "goal": "Ensure that the Momo King's business fails and that you are fully compensated for your creative work.",
+    "tips": "**Spice Things Up:** A few days ago, you were asking **Player 6 (The Chemist)** about what is the fastest working poison that is undetectable in food. You think if this comes up you could be in trouble so you need to keep the attention away from the chemist. If the chemist is cornered they might reveal your secret.",
+    "icon": "🖥️",
+    "image": "10.png"
 }

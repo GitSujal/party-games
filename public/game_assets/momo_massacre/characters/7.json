@@ -2,11 +2,14 @@
     "id": "7",
     "name": "The Legal Advisor",
     "role": "Suspect",
-    "description": "Lawyer seeing unethical practices.",
-    "about": "He ignored my legal advice and registered patents unethically. I threatened authorities.",
-    "secret": "Access to incriminating documents. Could blackmail him.",
-    "action": "Act like a lawyer, question others aggressively.",
-    "alibi": "Arguing on phone with P3.",
-    "goal": "Stop launch. Protect reputation.",
-    "icon": "⚖️"
+    "isOptional": true,
+    "description": "Legal advisor who spent weeks on contracts and patents, only to see the Momo King engage in unethical practices.",
+    "about": "I am **The Legal Advisor**! 📜 I spent weeks reviewing contracts, patents, and legal documents for the Momo King's business. My job was to ensure everything was legal and above board. But the Momo King? He started engaging in completely unethical practices—registering patents without my knowledge and utterly ignoring my critical legal advice! 😡 I felt he was more interested in quick money than following the law. His disregard for legal and ethical standards would lead to absolute chaos and massive lawsuits—and destroy *my* professional reputation. I threatened to report him to the authorities if he didn't stop!",
+    "secret": "I have access to confidential legal documents and contracts that could incriminate the Momo King and completely expose his fraudulent business practices. I could use this information to blackmail him into stopping the launch. My alibi is that I was standing outside the house arguing loudly on the phone with **Player 3 (The Rival Chef)** about how to handle the victim's aggressive legal threats.",
+    "action": "Your professional reputation is your life. Act like a lawyer and question everyone else aggressively about their alibis and motives. Try to find the factual flaws in their stories. Argue that it is ridiculous to suspect you, as a legal professional, of resorting to violence.",
+    "alibi": "I was standing outside the house arguing loudly on the phone with Player 3 (The Rival Chef) about how to handle the victim's aggressive legal threats.",
+    "goal": "Ensure the 'Best Momo of all Time' recipe is not launched, and that the Momo King is held accountable for his illegal and unethical practices.",
+    "tips": "**Spice Things Up:** You are the mediator of this entire group. You need to lead the investigation and question everyone aggressively looking for motives and alibis. Question everyone. You also have some suspicion about the relationship between the Momo King and his wife. He recently talked to you about what the divorce settlement would look like if things go south and can he protect his business and have it all for himself. You can bring this up during the investigation to spice things up.",
+    "icon": "⚖️",
+    "image": "7.png"
 }

@@ -11,7 +11,9 @@
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
       "Bash(npx eslint:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(cat:*)",
+      "Bash(npx wrangler r2 bucket create:*)"
     ],
     "deny": [],
     "ask": []

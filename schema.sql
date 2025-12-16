@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS players (
     game_id TEXT NOT NULL,
     name TEXT NOT NULL,
     character_id TEXT,
+    avatar_url TEXT,                    -- AI-generated avatar image URL or base64
+    original_image TEXT,                -- Original uploaded image key
+    avatar_generated_for_character TEXT,-- Character ID the avatar was generated for
     is_host INTEGER DEFAULT 0,
     ip_address TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

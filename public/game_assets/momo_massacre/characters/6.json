@@ -2,11 +2,14 @@
     "id": "6",
     "name": "The Chemist",
     "role": "Suspect",
-    "description": "Warned about preservatives.",
-    "about": "He ignored my advice on shelf life. Consumers will get sick! He threatened to cut me out.",
-    "secret": "Access to undetectable poisons. Saw examining Timur oil label in kitchen.",
-    "action": "Claim professional oath prevents you from harming.",
-    "alibi": "Examining ingredients in kitchen.",
-    "goal": "Protect consumers. Get credit.",
-    "icon": "⚗️"
+    "isOptional": true,
+    "description": "Chemist who experimented with compounds for the perfect Momo but was betrayed and threatened by the Momo King.",
+    "about": "I am **The Chemist**! ⚛️ I spent months experimenting with different compounds and additives to help the Momo King achieve the perfect texture and flavor for his dough and chutney. But he betrayed me, too! He started registering patents and making millions without consulting me. Worse, he completely ignored my crucial advice that the Momo cannot last on the shelf more than two months without proper preservatives! I believe this disregard for consumer safety will lead to people getting sick! 🤢 He threatened to cut me out of the business if I didn't agree with his reckless plans.",
+    "secret": "I have access to chemical compounds and enough specialized knowledge to administer an undetectable poison. Someone saw me arguing violently with the Momo King about the preservative issue just yesterday. Furthermore, I was in the kitchen examining the label on the Momo King's signature **Timur oil** when the lights went out, giving me a perfect opportunity to tamper with the food.",
+    "action": "You are a licensed professional who has taken oaths not to harm anyone. Use this strong philosophical stance to defend yourself. Claim you were merely examining the ingredients in the kitchen when the lights went out, as your professional curiosity overcame you.",
+    "alibi": "You were in the kitchen examining the label on the Momo King's Timur oil when the lights went out, which gave you perfect opportunity to tamper with food.",
+    "goal": "Expose the Momo King's unethical business practices and ensure the recipe is not launched in its current form to protect future consumers. You must also secure credit for your work.",
+    "tips": "**What You Witnessed:** While you were in the kitchen examining the Timur oil, you saw **Player 2 (The Food Fanatic)** adding something (looked like Timur spices) to the Momo King's plate. You can bring this up during the investigation to divert suspicion away from yourself.\n\n**Spice Things Up:** Few days ago the Tech Guy was asking you about what is the fastest working poison that is undetectable in food. You found this suspicious and have been keeping an eye on him since. Bring this up after 1st or 2nd round of questioning if you get cornered about the poison. Don't reveal this unless you are pressured and need to divert the attention away. The tech guy will try to help you divert the attention away from you but if the tech guy fails you can give this secret away.",
+    "icon": "⚗️",
+    "image": "6.png"
 }

@@ -2,11 +2,14 @@
     "id": "8",
     "name": "The Investor",
     "role": "Suspect",
-    "description": "Money man being cut out.",
-    "about": "He used my name to get other investors, then planned to cut me out. I want my seat at the table.",
-    "secret": "Resources to hire hitman. Seen threatening victim 'business exists only if I am in'.",
-    "action": "Demand share of business. Focus on finances.",
-    "alibi": "Online board meeting.",
-    "goal": "Get into the deal or sink the business.",
-    "icon": "💰"
+    "isOptional": true,
+    "description": "Wealthy investor who was betrayed when the Momo King tried to secure funds from multiple investors behind his back.",
+    "about": "I am **The Investor**! 💵 The Momo King came to me first, pitching his 'Best Momo of all Time' as a brilliant, unique opportunity. I was initially very excited! But recently, I found out the absolute truth: he was trying to secure funds from multiple investors behind my back, using my name and reputation to make them trust him, even though I hadn't signed anything! He was planning to collect all the money and **cut me out of the deal completely**! I feel betrayed and used. He thought he could use my influence and money and then discard me. I demand a seat at the table, or there is no business at all!",
+    "secret": "I have the money and resources to hire people to do 'dirty work' for me. In the past, I have certainly used my financial influence to get what I wanted through force and intimidation. Someone recently saw me threatening the Momo King, loudly saying this business will exist **only if** I am included. I know I look incredibly guilty.",
+    "action": "Act distracted and highly focused on your finances. Question **Player 7 (The Legal Advisor)**, as you suspect he knows too much about your aggressive financial tactics.",
+    "alibi": "I was checking the progress of an **online board meeting** when the lights went out.",
+    "goal": "Ensure that the Momo King includes you in the deal as promised, or you will make sure the business is completely sunk.",
+    "tips": "You have a history of using financial power for intimidation. Someone saw you threatening the Momo King recently, which makes you look very guilty.",
+    "icon": "💰",
+    "image": "8.png"
 }

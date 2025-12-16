@@ -16,7 +16,7 @@
             "id": "INTRO",
             "type": "cinematic",
             "background": "media/scenes/Game_Setting.png",
-            "audio": "media/audio/intro.wav",
+            "audio": "media/audio/game_intro.wav",
             "textKey": "intro",
             "title": "The Setting",
             "next": "TOAST"
@@ -30,6 +30,7 @@
                 {
                     "id": "INTRO",
                     "title": "Meet The Momo King",
+                    "audio": "media/audio/momo_king_intro.wav",
                     "textKey": "victimIntro",
                     "instruction": "Introduce the man of the hour!"
                 },

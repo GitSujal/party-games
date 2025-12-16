@@ -45,14 +45,25 @@ export default function PhaseCarousel({
         }}>
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                 {/* Left Side: Image */}
-                <div style={{ flex: 1, position: 'relative', background: '#000' }}>
-                    {characterImage && (
+                <div style={{ flex: 1, position: 'relative', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {player.avatarUrl ? (
+                        <img
+                            src={player.avatarUrl}
+                            alt={character.name}
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                                opacity: 0.9
+                            }}
+                        />
+                    ) : characterImage ? (
                         <div style={{
                             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                             background: `url("${characterImage}") center/contain no-repeat`,
                             opacity: 0.8
                         }} />
-                    )}
+                    ) : null}
                 </div>
 
                 {/* Right Side: Info */}

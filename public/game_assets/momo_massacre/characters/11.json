@@ -2,11 +2,14 @@
     "id": "11",
     "name": "The Rival Chef's Wife",
     "role": "Suspect",
-    "description": "Wife of P3, feels betrayed.",
-    "about": "Momo King betrayed my husband (P3). I threatened him to give my husband his share.",
-    "secret": "Affair with Momo King (P1)! Terrified husband will find out.",
-    "action": "Distract accusations from husband. Hide affair.",
-    "alibi": "N/A",
-    "goal": "Protect husband. Make King pay.",
-    "icon": "💔"
+    "isOptional": true,
+    "description": "Protective wife of the Rival Chef who feels her family's future was betrayed by the Momo King.",
+    "about": "I am **The Rival Chef's Wife**! My husband (Player 3) was completely betrayed by the Momo King. The Momo King took everything he learned from my husband—all those shared secrets—and is now launching a massive business that will earn millions, while cutting my family out! I feel this is a betrayal not just of my husband, but of *our entire family's* future. I am furious! I even called the Momo King this morning and **threatened him** to give my husband his rightful share, or I would make sure he paid for it!",
+    "secret": "I am having an affair with the Momo King (Player 1)! My husband (P3) is innocent in the affair, but I am terrified he will find out.",
+    "action": "You must aggressively try to distract accusations away from your husband and don't let your affair surface. Give some clues that maybe it's an internal matter. Raise suspicion that maybe the Momo King had external affair (without revealing it's you who he has affair with) to divert the accusation away from your husband and to the Momo King's wife.",
+    "alibi": "You were at the table during the incident.",
+    "goal": "Ensure that the Momo King pays for betraying my family. My primary goal is to protect my husband (P3) from being framed for the murder.",
+    "tips": "**Spice Things Up:** Give some clues that may be it's an internal matter. Raise suspicion that maybe the Momo King had external affair (without revealing it's you who he has affair with) to divert the accusation away from your husband and to the Momo King's wife.",
+    "icon": "💔",
+    "image": "11.png"
 }

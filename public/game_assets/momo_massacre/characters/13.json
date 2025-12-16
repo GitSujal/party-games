@@ -2,6 +2,7 @@
     "id": "13",
     "name": "The AI Developer",
     "role": "Suspect",
+    "isOptional": true,
     "description": "Created AI model, rights stolen.",
     "about": "I am **The AI Developer**! 🧠 I was hired by the Momo King to help him create the specialized AI model that perfected the recipe—uniform dough, chutney ratios, the whole nine yards! My hard work went into that model! I intended to reuse this AI to perfect *other* Nepali dishes and sell the tool to other chefs for massive profit. But the Momo King told me it was **his intellectual property** and I had no rights to it whatsoever! 😡 I believe the AI model is *my* creation, and my hard work was all for nothing. I will not let him profit from my genius!",
     "secret": "I know how to use **prompt injection** on AI chatbots to make them do things they are not supposed to do—including generating instructions for complex poisons or synthesizing illegal information. This gives me the theoretical knowledge to be the killer. My alibi is that I was chatting with my AI chatbot when the lights went out.",
@@ -9,5 +10,6 @@
     "alibi": "Chatting with AI chatbot.",
     "goal": "Ensure that you regain the rights to use the AI model for your own benefit, or that the IP is destroyed completely.",
     "tips": "**Spice Things Up:** **The Momo King's Wife** seemed quite interested in your work and has been asking weird questions about how to make ChatGPT give dangerous answers. If you get cornered, you can reveal this to divert attention!",
-    "icon": "🤖"
+    "icon": "🤖",
+    "image": "13.png"
 }

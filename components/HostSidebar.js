@@ -56,39 +56,68 @@ export default function HostSidebar({
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#888', marginBottom: '15px' }}>
                         <Users size={16} /> PLAYERS ({players.length})
                     </h4>
-                    {players.map(p => (
-                        <div key={p.id} style={{ background: '#222', padding: '10px', borderRadius: '5px', marginBottom: '8px', border: '1px solid #333' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                <span style={{ fontWeight: 'bold' }}>{p.name}</span>
-                                <button
-                                    onClick={() => {
-                                        const pin = prompt(`Kick ${p.name}? Enter Host PIN:`);
-                                        if (pin) onAction('KICK', { playerId: p.id, pin });
-                                    }}
-                                    style={{ background: 'none', border: '1px solid #d62828', color: '#d62828', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer' }}
-                                >
-                                    KICK
-                                </button>
-                            </div>
-                            {/* Assignment */}
-                            {p.characterId ? (
-                                <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>
-                                    {characters.find(c => c.id === p.characterId)?.name}
+                    {players.map(p => {
+                        // Debug logging
+                        if (p.avatarUrl) {
+                            console.log(`Player ${p.name} has avatar, length:`, p.avatarUrl.length);
+                        } else {
+                            console.log(`Player ${p.name} has NO avatar`);
+                        }
+
+                        return (
+                            <div key={p.id} style={{ background: '#222', padding: '10px', borderRadius: '5px', marginBottom: '8px', border: '1px solid #333', display: 'flex', gap: '10px' }}>
+                                {/* Avatar */}
+                                {p.avatarUrl && (
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--gold, #ffd700)', flexShrink: 0 }}>
+                                        <img
+                                            src={p.avatarUrl}
+                                            alt={p.name}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            onError={(e) => console.error('Image load error for', p.name, e)}
+                                            onLoad={() => console.log('Image loaded successfully for', p.name)}
+                                        />
+                                    </div>
+                                )}
+                                {!p.avatarUrl && (
+                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#444', border: '2px solid #666', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                                        👤
+                                    </div>
+                                )}
+                            {/* Player Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                                    <button
+                                        onClick={() => {
+                                            const pin = prompt(`Kick ${p.name}? Enter Host PIN:`);
+                                            if (pin) onAction('KICK', { playerId: p.id, pin });
+                                        }}
+                                        style={{ background: 'none', border: '1px solid #d62828', color: '#d62828', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                        KICK
+                                    </button>
                                 </div>
-                            ) : (
-                                <select
-                                    onChange={(e) => onAction('ASSIGN_CHARACTER', { playerId: p.id, characterId: e.target.value })}
-                                    style={{ width: '100%', padding: '5px', background: '#333', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '0.8rem' }}
-                                    defaultValue=""
-                                >
-                                    <option value="" disabled>Assign Character</option>
-                                    {unassignedCharacters.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                            )}
+                                {/* Assignment */}
+                                {p.characterId ? (
+                                    <div style={{ fontSize: '0.8rem', color: '#4caf50' }}>
+                                        {characters.find(c => c.id === p.characterId)?.name}
+                                    </div>
+                                ) : (
+                                    <select
+                                        onChange={(e) => onAction('ASSIGN_CHARACTER', { playerId: p.id, characterId: e.target.value })}
+                                        style={{ width: '100%', padding: '5px', background: '#333', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '0.8rem' }}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Assign Character</option>
+                                        {unassignedCharacters.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Clues */}
@@ -96,21 +125,59 @@ export default function HostSidebar({
                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#888', marginBottom: '15px' }}>
                         <Search size={16} /> EVIDENCE
                     </h4>
-                    {clues.map(clue => (
-                        <div key={clue.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '8px', background: revealedClues.includes(clue.id) ? '#222' : 'transparent', borderBottom: '1px solid #333' }}>
-                            <span style={{ fontSize: '0.9rem', color: revealedClues.includes(clue.id) ? '#666' : '#fff' }}>{clue.name}</span>
-                            {revealedClues.includes(clue.id) ? (
-                                <span style={{ fontSize: '0.8rem', color: '#4caf50' }}>✓</span>
-                            ) : (
-                                <button
-                                    onClick={() => onAction('REVEAL_CLUE', { clueId: clue.id })}
-                                    style={{ background: '#333', border: '1px solid #666', color: '#fff', fontSize: '0.8rem', padding: '4px 8px', borderRadius: '10px', cursor: 'pointer' }}
-                                >
-                                    Reveal
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                    {clues.map(clue => {
+                        const isRevealed = revealedClues.includes(clue.id);
+                        const isPublic = !clue.revealed_to || clue.revealed_to === "all";
+                        const targetAudience = isPublic ? "All players" : clue.revealed_to;
+
+                        return (
+                            <div key={clue.id} style={{
+                                marginBottom: '12px',
+                                padding: '10px',
+                                background: isRevealed ? '#222' : '#1a1a1a',
+                                borderRadius: '5px',
+                                border: `1px solid ${isRevealed ? '#333' : '#444'}`
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.9rem', color: isRevealed ? '#666' : '#fff', marginBottom: '4px' }}>
+                                            {clue.name}
+                                        </div>
+                                        <div style={{
+                                            fontSize: '0.7rem',
+                                            color: isPublic ? '#61dafb' : '#ffd700',
+                                            fontStyle: 'italic',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            {isPublic ? '👥' : '👤'} {targetAudience}
+                                        </div>
+                                    </div>
+                                    {isRevealed ? (
+                                        <span style={{ fontSize: '0.8rem', color: '#4caf50', marginLeft: '10px' }}>✓</span>
+                                    ) : (
+                                        <button
+                                            onClick={() => onAction('REVEAL_CLUE', { clueId: clue.id })}
+                                            style={{
+                                                background: '#333',
+                                                border: '1px solid #666',
+                                                color: '#fff',
+                                                fontSize: '0.75rem',
+                                                padding: '4px 10px',
+                                                borderRadius: '10px',
+                                                cursor: 'pointer',
+                                                marginLeft: '10px',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            Reveal
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* Admin */}

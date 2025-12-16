@@ -1,0 +1,15 @@
+{
+    "id": "14",
+    "name": "The Farmer",
+    "role": "Suspect",
+    "isOptional": true,
+    "description": "Local farmer who supplies fresh produce to the Momo King but is unpaid and uncredited.",
+    "about": "I am **The Farmer**! 🌽 I supply all the fresh cilantro, onions, and cabbage that give the Momo King's momos their legendary fresh taste. He claims it's his 'secret processing', but it's just *my* hard work and organic produce! Not only does he refuse to give me credit, but he also owes me months of back pay. He keeps stalling, saying 'once the business launches.' I'm struggling to keep my farm running while he plays rich man. I'm here to demand what is mine!",
+    "secret": "I possess a deep knowledge of local plants, including **poisonous berries** that grow in the wild forest bordering my farm. I gathered some recently for pest control. A few days ago, someone overheard me muttering, 'A handful of these could end all my problems.' I meant the rats eating my crops, but in light of the murder, it sounds incredibly incriminating.",
+    "action": "Critique the freshness of the garnish on the plates. Complain about how expensive fertilizer is becoming. If the Momo King is praised, mutter 'it's the produce, not the chef.'",
+    "alibi": "I was near the kitchen entrance, inspecting a crate of vegetables I delivered earlier to ensure they were being stored properly.",
+    "goal": "Get paid your overdue 6-months of invoices and force the Momo King to sign a supplier contract.",
+    "tips": "**Defense:** If accused about the berries, insist you are a simple farmer using nature's tools for pests. You wouldn't risk your farm's reputation on murder.",
+    "icon": "🌽",
+    "image": null
+}

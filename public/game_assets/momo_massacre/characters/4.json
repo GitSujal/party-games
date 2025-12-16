@@ -2,11 +2,14 @@
     "id": "4",
     "name": "The Food Scientist",
     "role": "Suspect",
-    "description": "Used for data, no credit given.",
-    "about": "I spent months analyzing ingredients. Victim registered patents without me. I feel used.",
-    "secret": "Knowledge of chemical compounds. Was testing acidity of chutney near crime scene.",
-    "action": "Challenge anyone discussing poison compounds.",
-    "alibi": "Washing chili off hands in bathroom (weak).",
-    "goal": "Expose unethical practices. Get credit.",
-    "icon": "🔬"
+    "isOptional": true,
+    "description": "Food scientist who spent months perfecting the Momo recipe's methodology, only to be betrayed by the Momo King.",
+    "about": "I am **The Food Scientist**! 🧪 I spent months of my life working with the Momo King, analyzing ingredients, running tests, and perfecting the methodology for that uniform dough thickness he brags about. I thought we were partners, advancing culinary science! Then, the betrayal: he started making huge business plans and **registered patents** using my data without consulting me or giving me proper credit. 😠 I feel utterly used, as if my contributions were just disposable data points. He was only interested in making money, not valuing my expertise!",
+    "secret": "I have advanced knowledge of chemical compounds and substances used in food preservation and poisoning—I know enough to do real damage and get away with it. Just before the party, I was actually in the kitchen testing the acidity of my *own* signature chutney, which means I was near the scene of the crime and any tampering. I am highly suspicious of **Player 10 (The Tech Guy)**, who I believe helped the Momo King hack into my research files.",
+    "action": "Challenge anyone who discusses the poison, asking them to specify the chemical compound. Point fingers at someone who might have a bigger *emotional* motive than you.",
+    "alibi": "You were in the bathroom washing chili off your hands (from testing your chutney) when the lights went out. This is a weak alibi.",
+    "goal": "Expose the Momo King's unethical business practices and ensure he does not profit from the recipe without publicly acknowledging your work.",
+    "tips": "You must save yourself by pointing fingers at someone who might have a bigger emotional motive than you. Your knowledge of chemicals makes you highly suspicious.",
+    "icon": "🔬",
+    "image": "4.png"
 }

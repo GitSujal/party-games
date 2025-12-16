@@ -2,11 +2,14 @@
     "id": "9",
     "name": "The Food Vlogger",
     "role": "Suspect",
-    "description": "Influencer who gave bad review.",
-    "about": "I gave a bad review. He attacked me publicly. I want revenge for my reputation.",
-    "secret": "Brought ultra-rare toxic chili oil. Everyone saw it.",
-    "action": "Defend reputation. Livestream alibi is weak.",
-    "alibi": "Livestreaming reaction (didn't show table).",
-    "goal": "Restore reputation. Ensure business fails.",
-    "icon": "🎥"
+    "isOptional": true,
+    "description": "Popular food influencer who posted a negative review and was publicly attacked by the Momo King.",
+    "about": "I am **The Food Vlogger**! 🤳 I am a popular influencer, and the Momo King invited me here to promote his 'Best Momo of all Time' to my followers. I was excited for the exclusive! But when I had the Momo, it was honestly... disappointing. So I posted a truthful, slightly negative review. The Momo King was absolutely furious! 😡 He publicly posted awful things about me, accusing me of sabotage and damaging my brand! I felt that he wasn't taking my opinion seriously, and his attack seriously hurt my reputation. I want revenge.",
+    "secret": "I brought a sample of my own **ultra-rare, toxic-level chili oil** (it's a prop I use in videos) just to impress the Momo King with its heat. That jar is still in the kitchen, and everyone saw me bring it in - especially **Player 2 (The Fanatic)** who made judgemental comments about it. This gives me a highly suspicious means of poisoning the food. I hate **Player 2 (The Fanatic)** because he always judges my 'lack of authenticity.'",
+    "action": "Claim you were **live-streaming** your reaction to the Momo when the lights went out. However, your live stream doesn't show the table or the other guests, which is suspicious. You must aggressively defend yourself if this flaw is brought up.",
+    "alibi": "I was live-streaming my reaction to the Momo when the lights went out, but my stream doesn't show the table or other guests.",
+    "goal": "Ensure that the Momo King's business fails and that my reputation is fully restored.",
+    "tips": "**Your Flaw:** **Player 2 (The Fanatic)** and others saw you bring in the toxic chili oil and will likely bring this up as evidence against you. Be prepared to defend that it's just a prop for your videos and you would never actually use it to harm anyone.\n\n**Spice Things Up:** One of your followers told you that they have seen the Momo King going out with the Rival Chef's wife. You can bring this up during the investigation to spice things up.",
+    "icon": "🎥",
+    "image": "9.png"
 }

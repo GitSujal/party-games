@@ -126,7 +126,14 @@ export default function Host() {
             if (subAction === 'SET_PHASE') {
                 await api.setPhase(queryGameId, hostPin, payload.phase);
             } else if (subAction === 'ASSIGN_CHARACTER') {
-                await api.assignCharacter(queryGameId, hostPin, payload.playerId, payload.characterId);
+                // Find character info to pass to API for avatar generation
+                const character = gameData?.characters?.find(c => c.id === payload.characterId);
+                const characterInfo = character ? {
+                    name: character.name,
+                    role: character.role,
+                    description: character.description || character.about
+                } : null;
+                await api.assignCharacter(queryGameId, hostPin, payload.playerId, payload.characterId, characterInfo);
             } else if (subAction === 'REVEAL_CLUE') {
                 await api.revealClue(queryGameId, hostPin, payload.clueId);
             } else if (subAction === 'KICK') {

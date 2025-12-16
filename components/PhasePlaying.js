@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 
 /**
  * PhasePlaying - Investigation phase with suspects and evidence board
@@ -6,6 +7,7 @@ import React, { useEffect, useRef } from 'react';
  */
 export default function PhasePlaying({ suspects, clues = [], revealedClues = [], victimName, victimImage, assetBase }) {
     const cluesEndRef = useRef(null);
+    const [expandedSuspect, setExpandedSuspect] = useState(null);
 
     // Auto-scroll to new clues
     useEffect(() => {
@@ -48,28 +50,58 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
 
                 {/* Left: Suspects Grid */}
                 <div style={{ flex: 3, padding: '20px', overflowY: 'auto', borderRight: '1px solid #333' }}>
-                    <h3 style={{ color: '#666', marginTop: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>Suspects</h3>
+                    <h3 style={{ color: '#666', marginTop: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>Suspects (Click to Inspect)</h3>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
                         gap: '15px'
                     }}>
                         {suspects.map(suspect => (
-                            <div key={suspect.player.id} style={{
-                                background: '#1a1a1d',
-                                borderRadius: '10px',
-                                overflow: 'hidden',
-                                border: '1px solid #333',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}>
+                            <div
+                                key={suspect.player.id}
+                                onClick={() => setExpandedSuspect(suspect)}
+                                style={{
+                                    background: '#1a1a1d',
+                                    borderRadius: '10px',
+                                    overflow: 'hidden',
+                                    border: '1px solid #333',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s',
+                                    ':hover': { transform: 'scale(1.02)' }
+                                }}
+                            >
                                 <div style={{
-                                    height: '100px',
-                                    background: suspect.character.image
-                                        ? `url("${assetBase || '/game_assets/momo_massacre'}/media/characters/${suspect.character.image}") center/cover no-repeat`
-                                        : '#333',
-                                    position: 'relative'
+                                    height: '200px',
+                                    position: 'relative',
+                                    background: '#000',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}>
+                                    {suspect.player.avatarUrl ? (
+                                        <img
+                                            src={suspect.player.avatarUrl}
+                                            alt={suspect.character.name}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover'
+                                            }}
+                                        />
+                                    ) : suspect.character.image ? (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            background: `url("${assetBase || '/game_assets/momo_massacre'}/media/characters/${suspect.character.image}") center/cover no-repeat`
+                                        }} />
+                                    ) : (
+                                        <div style={{ fontSize: '3rem' }}>👤</div>
+                                    )}
                                     <div style={{
                                         position: 'absolute', bottom: 0, left: 0, right: 0,
                                         background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
@@ -101,21 +133,89 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {visibleClues.map((clue) => (
-                                <div key={clue.id} style={{
-                                    background: '#222', padding: '20px', borderRadius: '5px', borderLeft: '4px solid var(--gold, #ffd700)',
-                                    animation: 'slideIn 0.5s ease-out'
-                                }}>
-                                    <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontSize: '1.2rem' }}>{clue.name}</h4>
-                                    <p style={{ margin: 0, color: '#ccc', lineHeight: '1.5' }}>{clue.content}</p>
-                                </div>
-                            ))}
+                            {visibleClues.map((clue) => {
+                                const isPublic = !clue.revealed_to || clue.revealed_to === "all";
+                                const targetAudience = isPublic ? "All players" : clue.revealed_to;
+
+                                // Find which player has the character this clue is for
+                                const targetPlayer = !isPublic && suspects.find(s => s.character.name === clue.revealed_to);
+
+                                return (
+                                    <div key={clue.id} style={{
+                                        background: '#222', padding: '20px', borderRadius: '5px', borderLeft: '4px solid var(--gold, #ffd700)',
+                                        animation: 'slideIn 0.5s ease-out'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                            <h4 style={{ margin: 0, color: '#fff', fontSize: '1.2rem' }}>{clue.name}</h4>
+                                            <span style={{
+                                                fontSize: '0.7rem',
+                                                color: isPublic ? '#61dafb' : '#ffd700',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                padding: '4px 8px',
+                                                borderRadius: '10px',
+                                                whiteSpace: 'nowrap'
+                                            }}>
+                                                {isPublic ? '👥' : '👤'} {targetAudience}
+                                            </span>
+                                        </div>
+                                        {isPublic ? (
+                                            <p style={{ margin: 0, color: '#ccc', lineHeight: '1.5' }}>{clue.content}</p>
+                                        ) : (
+                                            <p style={{ margin: 0, color: '#888', fontStyle: 'italic', lineHeight: '1.5' }}>
+                                                Private clue revealed to {targetPlayer ? targetPlayer.player.name : clue.revealed_to}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
                             <div ref={cluesEndRef} />
                         </div>
                     )}
                 </div>
 
             </div>
+
+            {/* Expanded Modal */}
+            {expandedSuspect && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.95)', zIndex: 100,
+                    display: 'flex', flexDirection: 'column',
+                    padding: '20px'
+                }}>
+                    <button
+                        onClick={() => setExpandedSuspect(null)}
+                        style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 101 }}
+                    >
+                        <X size={40} />
+                    </button>
+
+                    <div style={{ flex: 1, display: 'flex', gap: '40px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center', width: '100%' }}>
+                        {/* Use Avatar or Character Image */}
+                        <div style={{ flex: 1, height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {expandedSuspect.player.avatarUrl ? (
+                                <img src={expandedSuspect.player.avatarUrl} alt={expandedSuspect.character.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: '10px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }} />
+                            ) : expandedSuspect.character.image ? (
+                                <img src={`${assetBase || '/game_assets/momo_massacre'}/media/characters/${expandedSuspect.character.image}`} alt={expandedSuspect.character.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: '10px' }} />
+                            ) : (
+                                <div style={{ fontSize: '10rem' }}>👤</div>
+                            )}
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <h2 style={{ fontSize: '3rem', color: '#61dafb', marginBottom: '10px' }}>
+                                {expandedSuspect.character.name}
+                            </h2>
+                            <h3 style={{ fontSize: '1.5rem', color: '#888', marginBottom: '30px' }}>
+                                Played by {expandedSuspect.player.name}
+                            </h3>
+                            <div style={{ fontSize: '1.4rem', lineHeight: '1.6', color: '#ccc', background: '#222', padding: '30px', borderRadius: '10px', borderLeft: '4px solid #61dafb' }}>
+                                {expandedSuspect.character.description}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

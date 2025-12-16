@@ -32,7 +32,7 @@ export default function Player() {
 
         let interval;
         let errorCount = 0;
-        const baseInterval = 2000; // 2 seconds base polling
+        const baseInterval = 5000; // 5 seconds base polling
         const maxInterval = 10000; // Max 10 seconds
         const maxErrors = 5;
 
@@ -119,7 +119,17 @@ export default function Player() {
             Invalid character assignment. Please contact the host. <a href="/">Go Home</a>
         </div>;
     }
-    const revealedClues = clues.filter(c => (gameState.revealedClues || []).includes(c.id));
+    // Filter clues: must be revealed AND (for all OR for this character specifically)
+    const revealedClues = clues.filter(c => {
+        const isRevealed = (gameState.revealedClues || []).includes(c.id);
+        if (!isRevealed) return false;
+
+        // If no revealed_to field, default to showing to everyone
+        if (!c.revealed_to) return true;
+
+        // Show if revealed to all or to this character's name
+        return c.revealed_to === "all" || c.revealed_to === character?.name;
+    });
     const assetBase = `/game_assets/${gameType}`;
 
     // Waiting State
@@ -135,10 +145,10 @@ export default function Player() {
     // Playing / Finished State (Full UI)
     return (
         <div className="container" style={{ maxWidth: '600px' }}>
-            <PlayerHeader character={character} playerName={player.name} />
+            <PlayerHeader character={character} playerName={player.name} avatarUrl={player.avatarUrl} />
             <PlayerTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {activeTab === 'character' && <PlayerTabRole character={character} assetBase={assetBase} />}
+            {activeTab === 'character' && <PlayerTabRole character={character} assetBase={assetBase} avatarUrl={player.avatarUrl} />}
             {activeTab === 'secret' && <PlayerTabSecret character={character} assetBase={assetBase} />}
             {activeTab === 'clues' && <PlayerTabClues revealedClues={revealedClues} />}
         </div>

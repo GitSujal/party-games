@@ -3,26 +3,44 @@
         {
             "id": 1,
             "name": "The Riddle & Crystal",
-            "content": "All the lights in the house glowing bright, except one that lost its light. Seek the place where darkness dwells, there the Crystal's magic spells. (Find the broken light to find the Crystal. Use Crystal to ask Ghost YES/NO questions).",
-            "trigger": "manual"
+            "content": "All around is white, so bright it stings,\nYet in the corner, a dark one waits.\nUnder Perth’s fierce and burning sky,\nIt stays so still, so calm, so patient.\nWhere light meets sky, look low, not high—\nA shining gift where peaceful hands lie.\n\n(Find the Crystal. Use Crystal to ask Ghost YES/NO questions). Ghost doesn't give you straight Yes or No answer but will use gestures. You can ask 3 questions and you have to figure out what is Yes and No.",
+            "trigger": "manual",
+            "revealed_to": "all"
         },
         {
             "id": 2,
             "name": "Autopsy Report",
             "content": "Toxin: Aconitum (Monkshood). Lethal. Likely ingested with food. Important: Identify who had access to the victim's meal.",
-            "trigger": "manual"
+            "trigger": "manual",
+            "revealed_to": "all"
         },
         {
             "id": 3,
             "name": "Chemist's Insight",
             "content": "Chemicals used are similar to sleeping pills. Who has sleeping problems?",
-            "trigger": "manual"
+            "trigger": "manual",
+            "revealed_to": "The Chemist"
         },
         {
             "id": 4,
             "name": "Tech Guy's Hack (Text Message)",
             "content": "Unknown Contact to Momo King: 'Are you sure about this? All I want is us to be together in business or not'",
-            "trigger": "manual"
+            "trigger": "manual",
+            "revealed_to": "The Tech Guy"
+        },
+        {
+            "id": 5,
+            "name": "Strange Question",
+            "content": "The Farmer was asking you weirdly specific questions about how to process/concentrate poison from wild berries.",
+            "trigger": "manual",
+            "revealed_to": "The Food Scientist"
+        },
+        {
+            "id": 6,
+            "name": "Overheard Conversation",
+            "content": "You overheard a tense conversation between The Farmer and The Momo King's Wife discussing 'poison berries' in the garden.",
+            "trigger": "manual",
+            "revealed_to": "The Nutritionist"
         }
     ]
 }

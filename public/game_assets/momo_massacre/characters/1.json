@@ -2,6 +2,7 @@
     "id": "1",
     "name": "The Momo King",
     "role": "The Victim",
+    "isOptional": false,
     "description": "Renowned chef who perfected the 'Best Momo of all Time'.",
     "about": "This is the **Momo King**, a renowned chef who has been trying for ages to perfect the 'Best Momo of all Time' recipe! 👑 He didn't just talk to Chefs all over Nepal, he worked with Chemists, Nutritionists, Medical Professionals, and AI Developers to create the *ultimate* Momo. He even used complex AI to find the perfect uniform thickness of dough and chutney consistency. Everyone he sought advice from is around this table today, and he is here to celebrate his genius and soon-to-be fortune!",
     "secret": "Ultimate Fraud: You didn't actually cook these Momos. You secretly bought them frozen and re-steamed them, passing them off as your own creation. You are a complete fraud.",

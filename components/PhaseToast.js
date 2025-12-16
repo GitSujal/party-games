@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkipForward } from 'lucide-react';
+import { SkipForward, Play } from 'lucide-react';
 
 /**
  * PhaseToast - Data-driven toast phase
@@ -13,6 +13,8 @@ export default function PhaseToast({ config, storyline, assetBase, step, onSetSt
     const backgroundImage = step === 'INTRO'
         ? (config.victimImage ? `${assetBase}/${config.victimImage}` : null)
         : (config.toastImage ? `${assetBase}/${config.toastImage}` : null);
+
+    const audioUrl = currentStep?.audio ? `${assetBase}/${currentStep.audio}?v=1` : null;
 
     const text = currentStep?.textKey ? storyline[currentStep.textKey] : '';
 
@@ -32,6 +34,22 @@ export default function PhaseToast({ config, storyline, assetBase, step, onSetSt
                 <h1 style={{ fontSize: '3rem', color: step === 'INTRO' ? '#61dafb' : 'var(--gold)', marginBottom: '20px' }}>
                     {currentStep?.title || 'Toast'}
                 </h1>
+
+                {audioUrl && (
+                    <div style={{ marginBottom: '20px' }}>
+                        <audio id={`toastAudio-${step}`} src={audioUrl} autoPlay />
+                        <button
+                            onClick={() => {
+                                const audio = document.getElementById(`toastAudio-${step}`);
+                                if (audio) audio.play().catch(e => console.log("Audio play blocked:", e));
+                            }}
+                            className="btn"
+                            style={{ fontSize: '1rem', padding: '10px 20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)' }}
+                        >
+                            <Play size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Play Audio
+                        </button>
+                    </div>
+                )}
 
                 {currentStep?.instruction && (
                     <p style={{ fontSize: '1.2rem', color: '#888', marginBottom: '10px' }}>

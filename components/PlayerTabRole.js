@@ -16,35 +16,43 @@ function FlipCard({ frontContent, backContent, frontStyle = {}, backStyle = {} }
     );
 }
 
-export default function PlayerTabRole({ character }) {
+export default function PlayerTabRole({ character, avatarUrl }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', paddingBottom: '40px' }}>
 
             {/* 1. Identity Card */}
             <FlipCard
+                frontStyle={avatarUrl ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${avatarUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                } : {}}
                 frontContent={
                     <>
-                        <h3>Who are you?</h3>
-                        <div style={{
-                            width: '120px', height: '120px', background: character.image ? '#444' : 'transparent',
-                            borderRadius: '50%', margin: '20px auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            overflow: 'hidden', border: character.image ? '3px solid var(--gold)' : 'none'
-                        }}>
-                            {character.image ? (
-                                <img
-                                    src={`/game_assets/characters/${character.image}`}
-                                    onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.parentElement.style.background = 'transparent';
-                                        e.target.parentElement.style.border = 'none';
-                                    }}
-                                    alt={character.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            ) : null}
-                            <span style={{ fontSize: '4rem', display: character.image ? 'none' : 'block' }}>{character.icon}</span>
-                        </div>
-                        <p style={{ marginTop: '10px', color: '#ccc' }}>Tap to Reveal Identity</p>
+                        <h3 style={{ position: 'relative', zIndex: 1 }}>Who are you?</h3>
+                        {!avatarUrl && (
+                            <div style={{
+                                width: '120px', height: '120px', background: character.image ? '#444' : 'transparent',
+                                borderRadius: '50%', margin: '20px auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                overflow: 'hidden', border: character.image ? '3px solid var(--gold)' : 'none'
+                            }}>
+                                {character.image ? (
+                                    <img
+                                        src={character.image}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.style.background = 'transparent';
+                                            e.target.parentElement.style.border = 'none';
+                                        }}
+                                        alt={character.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                ) : null}
+                                <span style={{ fontSize: '4rem', display: character.image ? 'none' : 'block' }}>{character.icon}</span>
+                            </div>
+                        )}
+                        <p style={{ marginTop: '10px', color: '#ccc', position: 'relative', zIndex: 1 }}>Tap to Reveal Identity</p>
                     </>
                 }
                 backContent={
