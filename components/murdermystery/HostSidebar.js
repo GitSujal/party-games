@@ -58,31 +58,59 @@ export default function HostSidebar({
                     </h4>
                     {players.map(p => {
                         // Debug logging
-                        if (p.avatarUrl) {
-                            console.log(`Player ${p.name} has avatar, length:`, p.avatarUrl.length);
-                        } else {
-                            console.log(`Player ${p.name} has NO avatar`);
-                        }
+                        console.log(`[HostSidebar] Player ${p.name}:`, {
+                            avatarUrl: p.avatarUrl,
+                            originalImageUrl: p.originalImageUrl,
+                            isGenerating: p.avatarUrl === 'GENERATING'
+                        });
 
                         return (
                             <div key={p.id} style={{ background: '#222', padding: '10px', borderRadius: '5px', marginBottom: '8px', border: '1px solid #333', display: 'flex', gap: '10px' }}>
                                 {/* Avatar */}
-                                {p.avatarUrl && (
-                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--gold, #ffd700)', flexShrink: 0 }}>
-                                        <img
-                                            src={p.avatarUrl}
-                                            alt={p.name}
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            onError={(e) => console.error('Image load error for', p.name, e)}
-                                            onLoad={() => console.log('Image loaded successfully for', p.name)}
-                                        />
-                                    </div>
-                                )}
-                                {!p.avatarUrl && (
-                                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#444', border: '2px solid #666', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                                        👤
-                                    </div>
-                                )}
+                                {(() => {
+                                    // Determine which image to show
+                                    const isGenerating = p.avatarUrl === 'GENERATING';
+                                    const displayUrl = isGenerating ? p.originalImageUrl : p.avatarUrl;
+                                    const hasBorder = isGenerating ? '2px solid #ffaa00' : '2px solid var(--gold, #ffd700)';
+
+                                    if (displayUrl) {
+                                        return (
+                                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', border: hasBorder, flexShrink: 0, position: 'relative' }}>
+                                                <img
+                                                    src={displayUrl}
+                                                    alt={p.name}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    onError={(e) => console.error('Image load error for', p.name, e)}
+                                                    onLoad={() => console.log('Image loaded successfully for', p.name)}
+                                                />
+                                                {isGenerating && (
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        bottom: '-2px',
+                                                        right: '-2px',
+                                                        background: '#ffaa00',
+                                                        borderRadius: '50%',
+                                                        width: '20px',
+                                                        height: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: '2px solid #222',
+                                                        animation: 'pulse 1.5s infinite'
+                                                    }}>
+                                                        <span style={{ fontSize: '0.7rem' }}>⏳</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#444', border: '2px solid #666', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                                                👤
+                                            </div>
+                                        );
+                                    }
+                                })()}
                             {/* Player Info */}
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', alignItems: 'center' }}>

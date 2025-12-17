@@ -56,40 +56,46 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
                         gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
                         gap: '15px'
                     }}>
-                        {suspects.map(suspect => (
-                            <div
-                                key={suspect.player.id}
-                                onClick={() => setExpandedSuspect(suspect)}
-                                style={{
-                                    background: '#1a1a1d',
-                                    borderRadius: '10px',
-                                    overflow: 'hidden',
-                                    border: '1px solid #333',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    cursor: 'pointer',
-                                    transition: 'transform 0.2s',
-                                    ':hover': { transform: 'scale(1.02)' }
-                                }}
-                            >
-                                <div style={{
-                                    height: '200px',
-                                    position: 'relative',
-                                    background: '#000',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    {suspect.player.avatarUrl ? (
-                                        <img
-                                            src={suspect.player.avatarUrl}
-                                            alt={suspect.character.name}
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
-                                        />
+                        {suspects.map(suspect => {
+                            // Use original image if avatar is still generating
+                            const displayUrl = suspect.player.avatarUrl === 'GENERATING'
+                                ? suspect.player.originalImageUrl
+                                : suspect.player.avatarUrl;
+
+                            return (
+                                <div
+                                    key={suspect.player.id}
+                                    onClick={() => setExpandedSuspect(suspect)}
+                                    style={{
+                                        background: '#1a1a1d',
+                                        borderRadius: '10px',
+                                        overflow: 'hidden',
+                                        border: '1px solid #333',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        ':hover': { transform: 'scale(1.02)' }
+                                    }}
+                                >
+                                    <div style={{
+                                        height: '200px',
+                                        position: 'relative',
+                                        background: '#000',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        {displayUrl ? (
+                                            <img
+                                                src={displayUrl}
+                                                alt={suspect.character.name}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover'
+                                                }}
+                                            />
                                     ) : suspect.character.image ? (
                                         <div style={{
                                             position: 'absolute',
@@ -119,7 +125,8 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -176,25 +183,31 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
             </div>
 
             {/* Expanded Modal */}
-            {expandedSuspect && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.95)', zIndex: 100,
-                    display: 'flex', flexDirection: 'column',
-                    padding: '20px'
-                }}>
-                    <button
-                        onClick={() => setExpandedSuspect(null)}
-                        style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 101 }}
-                    >
-                        <X size={40} />
-                    </button>
+            {expandedSuspect && (() => {
+                // Use original image if avatar is still generating
+                const expandedDisplayUrl = expandedSuspect.player.avatarUrl === 'GENERATING'
+                    ? expandedSuspect.player.originalImageUrl
+                    : expandedSuspect.player.avatarUrl;
 
-                    <div style={{ flex: 1, display: 'flex', gap: '40px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center', width: '100%' }}>
-                        {/* Use Avatar or Character Image */}
-                        <div style={{ flex: 1, height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {expandedSuspect.player.avatarUrl ? (
-                                <img src={expandedSuspect.player.avatarUrl} alt={expandedSuspect.character.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: '10px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }} />
+                return (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.95)', zIndex: 100,
+                        display: 'flex', flexDirection: 'column',
+                        padding: '20px'
+                    }}>
+                        <button
+                            onClick={() => setExpandedSuspect(null)}
+                            style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 101 }}
+                        >
+                            <X size={40} />
+                        </button>
+
+                        <div style={{ flex: 1, display: 'flex', gap: '40px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center', width: '100%' }}>
+                            {/* Use Avatar or Character Image */}
+                            <div style={{ flex: 1, height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {expandedDisplayUrl ? (
+                                    <img src={expandedDisplayUrl} alt={expandedSuspect.character.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: '10px', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }} />
                             ) : expandedSuspect.character.image ? (
                                 <img src={`${assetBase || '/game_assets/momo_massacre'}/media/characters/${expandedSuspect.character.image}`} alt={expandedSuspect.character.name} style={{ maxHeight: '100%', maxWidth: '100%', borderRadius: '10px' }} />
                             ) : (
@@ -209,13 +222,14 @@ export default function PhasePlaying({ suspects, clues = [], revealedClues = [],
                             <h3 style={{ fontSize: '1.5rem', color: '#888', marginBottom: '30px' }}>
                                 Played by {expandedSuspect.player.name}
                             </h3>
-                            <div style={{ fontSize: '1.4rem', lineHeight: '1.6', color: '#ccc', background: '#222', padding: '30px', borderRadius: '10px', borderLeft: '4px solid #61dafb' }}>
-                                {expandedSuspect.character.description}
+                                <div style={{ fontSize: '1.4rem', lineHeight: '1.6', color: '#ccc', background: '#222', padding: '30px', borderRadius: '10px', borderLeft: '4px solid #61dafb' }}>
+                                    {expandedSuspect.character.description}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 }

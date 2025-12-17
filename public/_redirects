@@ -1,0 +1,2 @@
+# API routes - pass through to Cloudflare Functions
+/api/* /api/:splat 200

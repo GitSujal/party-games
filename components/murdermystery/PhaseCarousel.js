@@ -36,6 +36,9 @@ export default function PhaseCarousel({
     const { character, player } = suspect;
     const characterImage = character.image ? `${assetBase}/media/characters/${character.image}` : null;
 
+    // Use original image if avatar is still generating
+    const displayUrl = player.avatarUrl === 'GENERATING' ? player.originalImageUrl : player.avatarUrl;
+
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50,
@@ -46,9 +49,9 @@ export default function PhaseCarousel({
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                 {/* Left Side: Image */}
                 <div style={{ flex: 1, position: 'relative', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {player.avatarUrl ? (
+                    {displayUrl ? (
                         <img
-                            src={player.avatarUrl}
+                            src={displayUrl}
                             alt={character.name}
                             style={{
                                 maxWidth: '100%',

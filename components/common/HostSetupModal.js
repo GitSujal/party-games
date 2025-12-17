@@ -9,6 +9,8 @@ export default function HostSetupModal({ isOpen, onClose, onCreateSession, onRes
     const [mode, setMode] = useState('create'); // 'create' | 'resume'
     const [errorMessage, setErrorMessage] = useState(null);
 
+    const [gameType, setGameType] = useState('momo_massacre');
+
     // Auto-fill from localStorage on mount or open
     useEffect(() => {
         if (isOpen) {
@@ -35,7 +37,7 @@ export default function HostSetupModal({ isOpen, onClose, onCreateSession, onRes
         setLoading(true);
         setErrorMessage(null);
         try {
-            await onCreateSession(minPlayers);
+            await onCreateSession(minPlayers, gameType);
         } catch (e) {
             // Check for rate limit with existing game suggestion
             if (e.message.includes('Rate limit exceeded') || e.message.includes('429')) {
@@ -118,7 +120,23 @@ export default function HostSetupModal({ isOpen, onClose, onCreateSession, onRes
                             {errorMessage}
                         </div>
                     )}
-                    <p style={{ color: '#ccc', marginBottom: '20px', textAlign: 'center' }}>How many players?</p>
+
+                    <p style={{ color: '#ccc', marginBottom: '10px', textAlign: 'center' }}>Select Game</p>
+                    <div style={{ marginBottom: '20px' }}>
+                        <select
+                            value={gameType}
+                            onChange={(e) => setGameType(e.target.value)}
+                            style={{
+                                width: '100%', padding: '15px', borderRadius: '5px', border: '1px solid #444',
+                                background: '#222', color: '#fff', fontSize: '1rem', cursor: 'pointer'
+                            }}
+                        >
+                            <option value="momo_massacre">Momo Massacre (Mystery)</option>
+                            <option value="imposter">Imposter (Social Deduction)</option>
+                        </select>
+                    </div>
+
+                    <p style={{ color: '#ccc', marginBottom: '10px', textAlign: 'center' }}>How many players?</p>
                     <div style={{ marginBottom: '30px', textAlign: 'center' }}>
                         <input
                             ref={minPlayersRef}

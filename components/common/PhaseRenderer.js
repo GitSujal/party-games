@@ -1,11 +1,12 @@
 import React from 'react';
 import PhaseLobby from './PhaseLobby';
-import PhaseCinematic from './PhaseCinematic';
-import PhaseToast from './PhaseToast';
-import PhaseAnnouncement from './PhaseAnnouncement';
-import PhaseCarousel from './PhaseCarousel';
-import PhasePlaying from './PhasePlaying';
 import PhaseFinished from './PhaseFinished';
+import PhaseCinematic from '../murdermystery/PhaseCinematic';
+import PhaseToast from '../murdermystery/PhaseToast';
+import PhaseAnnouncement from '../murdermystery/PhaseAnnouncement';
+import PhaseCarousel from '../murdermystery/PhaseCarousel';
+import PhasePlaying from '../murdermystery/PhasePlaying';
+import PhaseImposter from '../imposter/PhaseImposter';
 
 /**
  * PhaseRenderer - Data-driven phase component renderer
@@ -138,6 +139,20 @@ export default function PhaseRenderer({
             return (
                 <PhaseFinished
                     {...commonProps}
+                    gameType={gameType}
+                    gameState={gameState}
+                />
+            );
+
+        case 'imposter_assign':
+        case 'imposter_playing':
+        case 'imposter_voting':
+        case 'imposter_elimination':
+            return (
+                <PhaseImposter
+                    {...commonProps}
+                    gameData={gameData}
+                    gameState={gameState}
                 />
             );
 

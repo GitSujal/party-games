@@ -144,7 +144,9 @@ async function deleteImageFromR2(r2Bucket, key) {
  */
 function r2KeyToUrl(key, origin) {
     if (!key) return null;
-    // Use our avatar serving endpoint
+    // Don't convert special marker values - return as-is for frontend to check
+    if (key === 'GENERATING') return 'GENERATING';
+    // Use our avatar serving endpoint for real R2 keys
     return `${origin}/api/avatar?key=${encodeURIComponent(key)}`;
 }
 
@@ -182,8 +184,8 @@ const error = (message, status = 400, corsHeaders) => json({ error: message }, s
 // Input Validation
 // ============================================================================
 
-const VALID_GAME_TYPES = ['momo_massacre']; // Extend as you add games
-const VALID_PHASES = ['LOBBY', 'INTRO', 'TOAST', 'MURDER', 'INTRODUCTIONS', 'PLAYING', 'FINISHED'];
+const VALID_GAME_TYPES = ['momo_massacre', 'imposter']; // Extend as you add games
+const VALID_PHASES = ['LOBBY', 'INTRO', 'TOAST', 'MURDER', 'INTRODUCTIONS', 'PLAYING', 'FINISHED', 'ASSIGN', 'VOTING', 'ELIMINATION'];
 const MAX_NAME_LENGTH = 50;
 const MIN_NAME_LENGTH = 1;
 const MIN_PLAYERS = 3;
@@ -320,11 +322,14 @@ function checkRateLimit(ip, action, corsHeaders) {
 // Avatar Generation with Gemini API
 // ============================================================================
 
-async function generateAvatar(base64Image, apiKey, characterInfo) {
-    console.log('>>> generateAvatar called');
+async function generateAvatar(base64Image, apiKey, characterInfo, attempt = 1) {
+    console.log(`>>> generateAvatar called (attempt ${attempt}/4)`);
     console.log('Image data length:', base64Image ? base64Image.length : 0);
     console.log('Character:', characterInfo);
     console.log('API Key present:', !!apiKey);
+
+    // Use the working model
+    const currentModel = 'gemini-3-pro-image-preview';
 
     const systemPrompt = `**SYSTEM ROLE:**
 You are a high-fidelity cinematic portrait engine specializing in "Character Identity Synthesis." Your objective is to merge a **User Reference Image** with a **Fictional Character Description** to create a seamless, photorealistic murder mystery avatar.
@@ -354,6 +359,7 @@ You are a high-fidelity cinematic portrait engine specializing in "Character Ide
 *   [NO] Altering the user's ethnicity, age (unless applying theatrical makeup), or gender presentation.
 *   [NO] Plastic/smooth skin filtering.
 *   [NO] Mismatched lighting temperatures between face and body.
+*   [NO] If the role says they are the killer do not use any indication that could hint this out. The goal is to not reveal this secret. 
 
 **OUTPUT GOAL:**
 A print-ready, photorealistic JPG/PNG that evokes the feeling: *"I have been transported to a cinematic crime scene."*`;
@@ -393,50 +399,88 @@ Apply character accurate clothing, hairstyle, and atmospheric background that ma
         }]
     };
 
-    console.log('>>> Calling Gemini API...');
+    console.log(`>>> [Attempt ${attempt}/4] Calling Gemini API with model: ${currentModel}`);
     console.log('Request body size:', JSON.stringify(requestBody).length);
 
-    // Use Gemini image generation model
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`,
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
+    // Use Gemini image generation model with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
+    try {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
+            }
+        );
+
+        clearTimeout(timeoutId);
+
+        console.log('>>> Gemini API response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('>>> Gemini API error response:', errorText);
+            throw new Error(`Avatar generation failed: ${response.status} - ${errorText}`);
         }
-    );
 
-    console.log('>>> Gemini API response status:', response.status);
+        const data = await response.json();
+        console.log('>>> Response received, parsing data...');
+        console.log('Has candidates:', !!data.candidates);
+        console.log('Candidates length:', data.candidates?.length || 0);
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('>>> Gemini API error response:', errorText);
-        throw new Error(`Avatar generation failed: ${response.status}`);
-    }
+        // Extract generated image from response (check all parts for inlineData)
+        if (data.candidates?.[0]?.content?.parts) {
+            const parts = data.candidates[0].content.parts;
+            console.log('Number of parts:', parts.length);
 
-    const data = await response.json();
-    console.log('>>> Response received, parsing data...');
-    console.log('Has candidates:', !!data.candidates);
-    console.log('Candidates length:', data.candidates?.length || 0);
-
-    // Extract generated image from response (check all parts for inlineData)
-    if (data.candidates?.[0]?.content?.parts) {
-        const parts = data.candidates[0].content.parts;
-        console.log('Number of parts:', parts.length);
-
-        for (const part of parts) {
-            if (part.inlineData) {
-                console.log('>>> Image found in part, mime type:', part.inlineData.mimeType);
-                console.log('>>> Generated image data length:', part.inlineData.data.length);
-                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            } else if (part.text) {
-                console.log('>>> Text part found:', part.text.substring(0, 200));
+            for (const part of parts) {
+                if (part.inlineData) {
+                    console.log('>>> Image found in part, mime type:', part.inlineData.mimeType);
+                    console.log('>>> Generated image data length:', part.inlineData.data.length);
+                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                } else if (part.text) {
+                    console.log('>>> Text part found:', part.text.substring(0, 200));
+                }
             }
         }
-    }
 
-    console.error('>>> No image data in response structure:', JSON.stringify(data).substring(0, 500));
-    throw new Error('No image data in Gemini response');
+        console.error('>>> No image data in response structure:', JSON.stringify(data).substring(0, 500));
+        throw new Error('No image data in Gemini response');
+    } catch (err) {
+        clearTimeout(timeoutId);
+
+        // Determine if error is retryable
+        const isRetryable =
+            err.name === 'AbortError' || // Timeout
+            err.message.includes('503') || // Service unavailable
+            err.message.includes('429') || // Rate limit
+            err.message.includes('UNAVAILABLE') ||
+            err.message.includes('overloaded');
+
+        // Retry logic for transient errors
+        if (isRetryable && attempt < 4) {
+            // Custom exponential backoff: 30s, 60s, 120s, 300s
+            const delays = [30000, 60000, 120000, 300000]; // 30s, 1min, 2min, 5min
+            const delayMs = delays[attempt - 1];
+            const delaySec = delayMs / 1000;
+            console.log(`>>> Retryable error detected. Waiting ${delaySec}s before attempt ${attempt + 1}/4...`);
+            console.warn(`⚠️ WARNING: Total delay of ${delaySec}s may exceed Cloudflare function timeout (30s)`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            return generateAvatar(base64Image, apiKey, characterInfo, attempt + 1);
+        }
+
+        // Log final error
+        if (err.name === 'AbortError') {
+            console.error('>>> Gemini API timeout after 25 seconds');
+            throw new Error('Avatar generation timed out after 4 attempts');
+        }
+        console.error(`>>> Gemini API error (attempt ${attempt}/4):`, err);
+        throw err;
+    }
 }
 
 // ============================================================================
@@ -566,9 +610,11 @@ export async function onRequest(context) {
                 case 'JOIN':
                     return await joinGame(db, payload || {}, ip, env, url.origin, corsHeaders);
                 case 'ADMIN_ACTION':
-                    return await adminAction(db, payload || {}, env, corsHeaders);
+                    return await adminAction(db, payload || {}, env, corsHeaders, context);
                 case 'KICK':
                     return await kickPlayer(db, payload || {}, corsHeaders);
+                case 'CAST_VOTE':
+                    return await castVote(db, payload || {}, corsHeaders);
                 default:
                     return error('Unknown action', 400, corsHeaders);
             }
@@ -593,7 +639,7 @@ async function getGameState(db, gameId, origin, corsHeaders) {
 
     const playersResult = await dbQuery(
         db,
-        'SELECT id, name, character_id, avatar_url, is_host FROM players WHERE game_id = ?',
+        'SELECT id, name, character_id, avatar_url, original_image, is_host, is_alive FROM players WHERE game_id = ?',
         [gameId]
     );
     const cluesResult = await dbQuery(
@@ -602,19 +648,36 @@ async function getGameState(db, gameId, origin, corsHeaders) {
         [gameId]
     );
 
+    // Get current voting round from games table
+    const currentRound = game.current_voting_round || 1;
+
+    // Get votes for current round
+    const votesResult = await dbQuery(
+        db,
+        'SELECT voter_id, voted_for_id FROM votes WHERE game_id = ? AND round_number = ?',
+        [gameId, currentRound]
+    );
+
     return json({
         gameId: game.id,
         gameType: game.game_type,
         phase: game.phase,
         minPlayers: game.min_players,
+        currentRound: currentRound,
         players: playersResult.results.map(p => ({
             id: p.id,
             name: p.name,
             characterId: p.character_id,
             avatarUrl: r2KeyToUrl(p.avatar_url, origin), // Convert R2 key to URL
-            isHost: !!p.is_host
+            originalImageUrl: r2KeyToUrl(p.original_image, origin), // Original uploaded photo
+            isHost: !!p.is_host,
+            isAlive: !!p.is_alive
         })),
-        revealedClues: cluesResult.results.map(c => c.clue_id)
+        revealedClues: cluesResult.results.map(c => c.clue_id),
+        votes: votesResult.results.map(v => ({
+            voterId: v.voter_id,
+            votedForId: v.voted_for_id
+        }))
     }, 200, corsHeaders);
 }
 
@@ -780,7 +843,7 @@ async function joinGame(db, payload, ip, env, origin, corsHeaders) {
 // Admin Actions
 // ============================================================================
 
-async function adminAction(db, payload, env, corsHeaders) {
+async function adminAction(db, payload, env, corsHeaders, context) {
     const { gameId, pin, subAction } = payload;
 
     // Validate inputs
@@ -815,11 +878,22 @@ async function adminAction(db, payload, env, corsHeaders) {
             if (!phaseValidation.valid) {
                 return error(phaseValidation.error, 400, corsHeaders);
             }
-            await dbRun(
-                db,
-                'UPDATE games SET phase = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [payload.phase, gameId]
-            );
+
+            // Auto-increment round when going from ELIMINATION to PLAYING (start new voting round)
+            if (game.phase === 'ELIMINATION' && payload.phase === 'PLAYING' && game.game_type === 'imposter') {
+                const newRound = (game.current_voting_round || 1) + 1;
+                await dbRun(
+                    db,
+                    'UPDATE games SET phase = ?, current_voting_round = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    [payload.phase, newRound, gameId]
+                );
+            } else {
+                await dbRun(
+                    db,
+                    'UPDATE games SET phase = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    [payload.phase, gameId]
+                );
+            }
             break;
 
         case 'ASSIGN_CHARACTER':
@@ -843,15 +917,21 @@ async function adminAction(db, payload, env, corsHeaders) {
                 [payload.characterId, payload.playerId]
             );
 
-            console.log('=== AVATAR GENERATION DEBUG ===');
-            console.log('Player ID:', payload.playerId);
-            console.log('Character ID:', payload.characterId);
-            console.log('Has original_image key:', !!player.original_image);
-            console.log('Has characterInfo:', !!payload.characterInfo);
-            console.log('Character Info:', payload.characterInfo);
-            console.log('Has GEMINI_API_KEY:', !!env.GEMINI_API_KEY);
-            console.log('Has R2 bucket:', !!env.AVATARS);
-            console.log('Avatar already generated for character:', player.avatar_generated_for_character);
+            // Debug logs array to return to client
+            const debugLogs = [];
+            debugLogs.push('=== AVATAR GENERATION DEBUG ===');
+            debugLogs.push(`Player ID: ${payload.playerId}`);
+            debugLogs.push(`Character ID: ${payload.characterId}`);
+            debugLogs.push(`Has original_image key: ${!!player.original_image}`);
+            debugLogs.push(`Original image key: ${player.original_image || 'none'}`);
+            debugLogs.push(`Has characterInfo: ${!!payload.characterInfo}`);
+            debugLogs.push(`Character Info: ${JSON.stringify(payload.characterInfo)}`);
+            debugLogs.push(`Has GEMINI_API_KEY: ${!!env.GEMINI_API_KEY}`);
+            debugLogs.push(`GEMINI_API_KEY length: ${env.GEMINI_API_KEY?.length || 0}`);
+            debugLogs.push(`Has R2 bucket: ${!!env.AVATARS}`);
+            debugLogs.push(`Avatar already generated for character: ${player.avatar_generated_for_character || 'none'}`);
+
+            console.log(debugLogs.join('\n'));
 
             // Check if we need to generate avatar
             const needsGeneration = player.original_image &&
@@ -860,52 +940,90 @@ async function adminAction(db, payload, env, corsHeaders) {
                 env.AVATARS &&
                 player.avatar_generated_for_character !== payload.characterId;
 
+            debugLogs.push(`Needs generation: ${needsGeneration}`);
+            debugLogs.push(`⚡ Avatar generation mode: ASYNC (background processing)`);
+
             if (needsGeneration) {
-                console.log('✓ Generating new avatar for character:', payload.characterInfo.name);
-                try {
-                    // Fetch original image from R2
-                    console.log('→ Fetching original image from R2:', player.original_image);
-                    const originalImageBase64 = await getImageFromR2(env.AVATARS, player.original_image);
+                debugLogs.push(`✓ Starting async avatar generation for: ${payload.characterInfo.name}`);
+                debugLogs.push(`→ Response will return immediately`);
+                debugLogs.push(`→ Avatar will generate in background (polling will show updates)`);
 
-                    // Generate AI avatar
-                    console.log('→ Calling Gemini API to generate avatar...');
-                    const aiAvatarBase64 = await generateAvatar(
-                        originalImageBase64,
-                        env.GEMINI_API_KEY,
-                        payload.characterInfo
-                    );
+                // Mark avatar as generating in database
+                await dbRun(
+                    db,
+                    'UPDATE players SET avatar_url = ? WHERE id = ?',
+                    ['GENERATING', payload.playerId]
+                );
 
-                    console.log('✓ Avatar generated successfully');
+                // Start background avatar generation (non-blocking)
+                // This will continue even after the response is sent
+                const backgroundTask = (async () => {
+                    try {
+                        console.log(`[BACKGROUND] Starting avatar generation for player ${payload.playerId}`);
 
-                    // Upload generated avatar to R2
-                    const generatedKey = `avatars/${gameId}/${payload.playerId}/generated-${payload.characterId}.jpg`;
-                    console.log('→ Uploading generated avatar to R2:', generatedKey);
-                    await uploadImageToR2(env.AVATARS, aiAvatarBase64, generatedKey);
+                        // Fetch original image from R2
+                        const originalImageBase64 = await getImageFromR2(env.AVATARS, player.original_image);
+                        console.log(`[BACKGROUND] Original image fetched, size: ${originalImageBase64.length}`);
 
-                    // Update player's avatar with R2 key and mark as generated
-                    await dbRun(
-                        db,
-                        'UPDATE players SET avatar_url = ?, avatar_generated_for_character = ? WHERE id = ?',
-                        [generatedKey, payload.characterId, payload.playerId]
-                    );
+                        // Generate AI avatar with retries
+                        const startTime = Date.now();
+                        const aiAvatarBase64 = await generateAvatar(
+                            originalImageBase64,
+                            env.GEMINI_API_KEY,
+                            payload.characterInfo
+                        );
+                        const duration = Date.now() - startTime;
+                        console.log(`[BACKGROUND] Avatar generated in ${duration}ms`);
 
-                    console.log('✓ Avatar uploaded to R2 and database updated');
-                } catch (err) {
-                    console.error('✗ Avatar generation failed:', err);
-                    console.error('Error stack:', err.stack);
-                    // Continue with original image if generation fails
+                        // Upload generated avatar to R2
+                        const generatedKey = `avatars/${gameId}/${payload.playerId}/generated-${payload.characterId}.jpg`;
+                        await uploadImageToR2(env.AVATARS, aiAvatarBase64, generatedKey);
+                        console.log(`[BACKGROUND] Avatar uploaded to R2: ${generatedKey}`);
+
+                        // Update player's avatar with R2 key and mark as generated
+                        await dbRun(
+                            db,
+                            'UPDATE players SET avatar_url = ?, avatar_generated_for_character = ? WHERE id = ?',
+                            [generatedKey, payload.characterId, payload.playerId]
+                        );
+
+                        console.log(`[BACKGROUND] ✓ Avatar generation complete for player ${payload.playerId}`);
+                    } catch (err) {
+                        console.error(`[BACKGROUND] ✗ Avatar generation failed for player ${payload.playerId}:`, err);
+                        // Revert to null on failure so original image shows
+                        await dbRun(
+                            db,
+                            'UPDATE players SET avatar_url = NULL WHERE id = ?',
+                            [payload.playerId]
+                        );
+                    }
+                })();
+
+                // Use waitUntil to keep the worker alive for background processing
+                // Note: In Cloudflare Pages Functions, this allows processing to continue
+                // after the response is sent
+                if (context?.waitUntil) {
+                    context.waitUntil(backgroundTask);
+                    debugLogs.push('✓ Background task registered with waitUntil');
+                } else {
+                    // Fallback: start the promise but don't await it
+                    backgroundTask.catch(err => console.error('[BACKGROUND] Unhandled error:', err));
+                    debugLogs.push('✓ Background task started (no waitUntil support)');
                 }
+
             } else if (player.avatar_generated_for_character === payload.characterId) {
-                console.log('⚡ Using cached avatar - already generated for this character');
+                debugLogs.push('⚡ Using cached avatar - already generated for this character');
             } else {
-                console.log('✗ Avatar generation skipped:');
-                if (!player.original_image) console.log('  - No original_image key');
-                if (!payload.characterInfo) console.log('  - No characterInfo');
-                if (!env.GEMINI_API_KEY) console.log('  - No GEMINI_API_KEY');
-                if (!env.AVATARS) console.log('  - No R2 bucket');
+                debugLogs.push('✗ Avatar generation skipped:');
+                if (!player.original_image) debugLogs.push('  - No original_image key');
+                if (!payload.characterInfo) debugLogs.push('  - No characterInfo');
+                if (!env.GEMINI_API_KEY) debugLogs.push('  - No GEMINI_API_KEY');
+                if (!env.AVATARS) debugLogs.push('  - No R2 bucket');
             }
-            console.log('==============================');
-            break;
+            debugLogs.push('==============================');
+
+            // Return immediately - avatar will generate in background
+            return json({ success: true, debugLogs }, 200, corsHeaders);
 
         case 'REVEAL_CLUE':
             if (!payload.clueId) {
@@ -919,17 +1037,285 @@ async function adminAction(db, payload, env, corsHeaders) {
             break;
 
         case 'RESET':
-            await dbRun(db, 'DELETE FROM players WHERE game_id = ? AND is_host = 0', [gameId]);
-            await dbRun(db, 'DELETE FROM revealed_clues WHERE game_id = ?', [gameId]);
+            // For imposter game, keep players but reset their state and reassign roles
+            if (game.game_type === 'imposter' && payload.keepPlayers) {
+                // Get all non-host players
+                const playersResult = await dbQuery(
+                    db,
+                    'SELECT id FROM players WHERE game_id = ? AND is_host = 0',
+                    [gameId]
+                );
+                const players = playersResult.results;
+
+                if (players.length > 0) {
+                    // Reset all players: clear roles and revive them
+                    await dbRun(
+                        db,
+                        'UPDATE players SET character_id = NULL, is_alive = 1 WHERE game_id = ? AND is_host = 0',
+                        [gameId]
+                    );
+
+                    // Delete all votes
+                    await dbRun(db, 'DELETE FROM votes WHERE game_id = ?', [gameId]);
+
+                    // Reassign roles with new word (if words provided)
+                    if (payload.newWord) {
+                        const playerCount = players.length;
+                        const imposterCount = Math.max(1, Math.floor(playerCount * 0.25));
+
+                        // Shuffle players
+                        const shuffled = [...players].sort(() => 0.5 - Math.random());
+                        const imposters = shuffled.slice(0, imposterCount);
+                        const civilians = shuffled.slice(imposterCount);
+
+                        // Update roles
+                        const roleUpdates = [];
+                        imposters.forEach(p => {
+                            roleUpdates.push(
+                                dbRun(
+                                    db,
+                                    'UPDATE players SET character_id = ? WHERE id = ?',
+                                    ['IMPOSTER', p.id]
+                                )
+                            );
+                        });
+                        civilians.forEach(p => {
+                            roleUpdates.push(
+                                dbRun(
+                                    db,
+                                    'UPDATE players SET character_id = ? WHERE id = ?',
+                                    [`WORD:${payload.newWord}`, p.id]
+                                )
+                            );
+                        });
+                        await Promise.all(roleUpdates);
+
+                        // Go directly to ASSIGN phase and reset voting round
+                        await dbRun(
+                            db,
+                            "UPDATE games SET phase = 'ASSIGN', current_voting_round = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            [gameId]
+                        );
+                    } else {
+                        // No new word, go back to LOBBY
+                        await dbRun(
+                            db,
+                            "UPDATE games SET phase = 'LOBBY', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            [gameId]
+                        );
+                    }
+                }
+            } else {
+                // Original reset behavior for murder mystery or if keepPlayers is false
+                await dbRun(db, 'DELETE FROM players WHERE game_id = ? AND is_host = 0', [gameId]);
+                await dbRun(db, 'DELETE FROM revealed_clues WHERE game_id = ?', [gameId]);
+                await dbRun(db, 'DELETE FROM votes WHERE game_id = ?', [gameId]);
+                await dbRun(
+                    db,
+                    "UPDATE games SET phase = 'LOBBY', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [gameId]
+                );
+            }
+            break;
+
+        case 'START_ROUND_IMPOSTER':
+            if (!payload.roles) {
+                return error('roles map required', 400, corsHeaders);
+            }
+            // Batch update players with their assigned roles/words
+            // roles is { playerId: "Imposter" | "Word: XYZ" }
+            const updates = Object.entries(payload.roles).map(([pid, role]) => {
+                return dbRun(
+                    db,
+                    'UPDATE players SET character_id = ? WHERE id = ? AND game_id = ?',
+                    [role, pid, gameId]
+                );
+            });
+            await Promise.all(updates);
+
+            // Set phase to ASSIGN and reset voting round to 1
             await dbRun(
                 db,
-                "UPDATE games SET phase = 'LOBBY', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                "UPDATE games SET phase = 'ASSIGN', current_voting_round = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                 [gameId]
             );
             break;
 
+        case 'INCREMENT_ROUND':
+            // Increment the voting round (used when continuing from ELIMINATION to next round)
+            const newRound = payload.round || ((game.current_voting_round || 1) + 1);
+            await dbRun(
+                db,
+                "UPDATE games SET current_voting_round = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                [newRound, gameId]
+            );
+            break;
+
+        case 'FINALIZE_VOTING':
+            // Calculate vote results and eliminate players
+            const currentRound = game.current_voting_round || 1;
+
+            // Get all votes for current round
+            const votesForRound = await dbQuery(
+                db,
+                'SELECT voted_for_id FROM votes WHERE game_id = ? AND round_number = ?',
+                [gameId, currentRound]
+            );
+
+            // Count votes
+            const voteCounts = {};
+            votesForRound.results.forEach(v => {
+                voteCounts[v.voted_for_id] = (voteCounts[v.voted_for_id] || 0) + 1;
+            });
+
+            // Find max votes
+            const maxVotes = Math.max(...Object.values(voteCounts), 0);
+
+            // Find all players with max votes (handle ties)
+            const playersWithMaxVotes = Object.entries(voteCounts)
+                .filter(([_, count]) => count === maxVotes && maxVotes > 0)
+                .map(([playerId, _]) => playerId);
+
+            let eliminated = [];
+            let nextPhase = 'ELIMINATION';
+            let isTie = false;
+            let nextRound = currentRound;
+
+            // TIE: If more than one player has max votes, NO ONE is eliminated
+            if (playersWithMaxVotes.length > 1) {
+                isTie = true;
+                nextPhase = 'VOTING'; // Go back to voting with incremented round
+                nextRound = currentRound + 1; // Increment round for next voting session
+                // Don't eliminate anyone
+            } else if (playersWithMaxVotes.length === 1) {
+                // Clear winner - eliminate them
+                eliminated = playersWithMaxVotes;
+                const eliminateQuery = dbRun(db, 'UPDATE players SET is_alive = 0 WHERE id = ?', [eliminated[0]]);
+                await eliminateQuery;
+                nextPhase = 'ELIMINATION';
+                // Keep same round for ELIMINATION to see votes
+            }
+
+            // Check win conditions (only if someone was eliminated)
+            const alivePlayers = await dbQuery(
+                db,
+                'SELECT id, character_id FROM players WHERE game_id = ? AND is_alive = 1 AND is_host = 0',
+                [gameId]
+            );
+
+            const imposters = alivePlayers.results.filter(p => p.character_id === 'IMPOSTER').length;
+            const genuinePlayers = alivePlayers.results.filter(p => p.character_id && p.character_id.startsWith('WORD:')).length;
+
+            // Only check win conditions if there was an elimination
+            if (eliminated.length > 0) {
+                if (imposters === 0) {
+                    // Genuine players win
+                    nextPhase = 'FINISHED';
+                } else if (imposters >= genuinePlayers) {
+                    // Imposters win
+                    nextPhase = 'FINISHED';
+                }
+            }
+
+            // Update phase and round
+            // - If TIE: increment round and go back to VOTING (fresh votes)
+            // - If ELIMINATION: keep same round so ELIMINATION screen can see votes
+            await dbRun(
+                db,
+                "UPDATE games SET phase = ?, current_voting_round = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                [nextPhase, nextRound, gameId]
+            );
+
+            return json({
+                success: true,
+                eliminated,
+                voteCounts,
+                isTie,
+                impostersRemaining: imposters,
+                genuinePlayersRemaining: genuinePlayers,
+                gameOver: nextPhase === 'FINISHED'
+            }, 200, corsHeaders);
+
         default:
             return error('Unknown subAction', 400, corsHeaders);
+    }
+
+    return json({ success: true }, 200, corsHeaders);
+}
+
+// ============================================================================
+// Cast Vote (Imposter Game)
+// ============================================================================
+
+async function castVote(db, payload, corsHeaders) {
+    const { gameId, playerId, votedForId } = payload;
+
+    // Validate inputs
+    const gameIdValidation = validateGameId(gameId);
+    if (!gameIdValidation.valid) {
+        return error(gameIdValidation.error, 400, corsHeaders);
+    }
+
+    if (!playerId || !votedForId) {
+        return error('playerId and votedForId required', 400, corsHeaders);
+    }
+
+    // Check game exists
+    const game = await dbQueryFirst(db, 'SELECT * FROM games WHERE id = ?', [gameId]);
+    if (!game) {
+        return error('Game not found', 404, corsHeaders);
+    }
+
+    // Check if game is in voting phase
+    if (game.phase !== 'VOTING') {
+        return error('Game is not in voting phase', 400, corsHeaders);
+    }
+
+    // Verify player exists and is alive
+    const player = await dbQueryFirst(
+        db,
+        'SELECT * FROM players WHERE id = ? AND game_id = ? AND is_alive = 1',
+        [playerId, gameId]
+    );
+    if (!player) {
+        return error('Player not found or eliminated', 404, corsHeaders);
+    }
+
+    // Verify voted-for player exists and is alive
+    const votedFor = await dbQueryFirst(
+        db,
+        'SELECT * FROM players WHERE id = ? AND game_id = ? AND is_alive = 1',
+        [votedForId, gameId]
+    );
+    if (!votedFor) {
+        return error('Voted-for player not found or eliminated', 404, corsHeaders);
+    }
+
+    // Get current round from game
+    const currentRound = game.current_voting_round || 1;
+
+    // Check if player already voted this round
+    const existingVote = await dbQueryFirst(
+        db,
+        'SELECT * FROM votes WHERE game_id = ? AND voter_id = ? AND round_number = ?',
+        [gameId, playerId, currentRound]
+    );
+
+    if (existingVote) {
+        // Update existing vote
+        await dbRun(
+            db,
+            'UPDATE votes SET voted_for_id = ? WHERE id = ?',
+            [votedForId, existingVote.id]
+        );
+    } else {
+        // Create new vote
+        const voteId = generateId();
+        await dbRun(
+            db,
+            'INSERT INTO votes (id, game_id, voter_id, voted_for_id, round_number) VALUES (?, ?, ?, ?, ?)',
+            [voteId, gameId, playerId, votedForId, currentRound]
+        );
     }
 
     return json({ success: true }, 200, corsHeaders);

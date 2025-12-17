@@ -8,7 +8,7 @@ export default function PhaseLobby({ gameId, minPlayers, players, qrSrc, joinUrl
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
             <div style={{ textAlign: 'center', animation: 'fadeIn 0.5s' }}>
-                <h1 style={{ fontSize: '3.5rem', marginBottom: '30px', color: '#d62828', textTransform: 'uppercase', letterSpacing: '4px', textShadow: '0 0 20px rgba(214, 40, 40, 0.4)' }}>
+                <h1 style={{ fontSize: '3.5rem', marginBottom: '30px', color: 'var(--primary, #d62828)', textTransform: 'uppercase', letterSpacing: '4px', textShadow: '0 0 20px rgba(0, 0, 0, 0.4)' }}>
                     {gameName}
                 </h1>
 

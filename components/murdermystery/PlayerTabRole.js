@@ -16,14 +16,17 @@ function FlipCard({ frontContent, backContent, frontStyle = {}, backStyle = {} }
     );
 }
 
-export default function PlayerTabRole({ character, avatarUrl }) {
+export default function PlayerTabRole({ character, avatarUrl, originalImageUrl }) {
+    // Use original image if avatar is still generating
+    const displayUrl = avatarUrl === 'GENERATING' ? originalImageUrl : avatarUrl;
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', paddingBottom: '40px' }}>
 
             {/* 1. Identity Card */}
             <FlipCard
-                frontStyle={avatarUrl ? {
-                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${avatarUrl})`,
+                frontStyle={displayUrl ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${displayUrl})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     textShadow: '0 2px 4px rgba(0,0,0,0.8)'
@@ -31,7 +34,7 @@ export default function PlayerTabRole({ character, avatarUrl }) {
                 frontContent={
                     <>
                         <h3 style={{ position: 'relative', zIndex: 1 }}>Who are you?</h3>
-                        {!avatarUrl && (
+                        {!displayUrl && (
                             <div style={{
                                 width: '120px', height: '120px', background: character.image ? '#444' : 'transparent',
                                 borderRadius: '50%', margin: '20px auto', display: 'flex', alignItems: 'center', justifyContent: 'center',

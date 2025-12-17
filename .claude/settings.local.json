@@ -13,7 +13,10 @@
       "Bash(npx eslint:*)",
       "Bash(python -m json.tool:*)",
       "Bash(cat:*)",
-      "Bash(npx wrangler r2 bucket create:*)"
+      "Bash(npx wrangler r2 bucket create:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir /b \"C:\\Users\\sujal\\Documents\\static_repo\\Personal\\Murder_Mystery\\public\")"
     ],
     "deny": [],
     "ask": []

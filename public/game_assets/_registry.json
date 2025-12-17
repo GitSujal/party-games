@@ -7,6 +7,14 @@
             "thumbnail": "momo_massacre/media/scenes/cover.png",
             "minPlayers": 3,
             "maxPlayers": 13
+        },
+        {
+            "id": "imposter",
+            "name": "Imposter",
+            "description": "A game of deception. Find the imposter who doesn't know the secret word.",
+            "thumbnail": "imposter/media/cover.png",
+            "minPlayers": 3,
+            "maxPlayers": 20
         }
     ]
 }

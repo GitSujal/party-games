@@ -94,12 +94,15 @@ h4 {
   justify-content: center;
   align-items: center;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 .flip-card-front {
   background-color: #333;
   color: white;
   border: 1px solid #444;
+  z-index: 2;
+  transform: rotateY(0deg);
 }
 
 .flip-card-back {
@@ -107,6 +110,21 @@ h4 {
   color: white;
   transform: rotateY(180deg);
   border: 1px solid var(--accent);
+  z-index: 1;
+}
+
+/* Ensure front side is hidden when flipped */
+.flip-card.flipped .flip-card-front {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Ensure back side is visible when flipped */
+.flip-card.flipped .flip-card-back {
+  visibility: visible;
+  opacity: 1;
+  z-index: 2;
 }
 
 .momo-font {
@@ -114,4 +132,16 @@ h4 {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--accent);
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
 }

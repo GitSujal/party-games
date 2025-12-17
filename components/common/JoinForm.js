@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
-import * as api from '../lib/apiClient';
+import * as api from '../../lib/apiClient';
 import { Camera, Upload, X } from 'lucide-react';
 
 export default function JoinForm({ initialGameId = '' }) {
@@ -76,10 +76,32 @@ export default function JoinForm({ initialGameId = '' }) {
         }
     };
 
-    const handleNext = (e) => {
+    const handleNext = async (e) => {
         e.preventDefault();
-        if (step === 1 && name && inputGameId) {
-            setStep(2);
+        if (!name || !inputGameId) return;
+
+        setLoading(true);
+        try {
+            // Fetch game state to determine game type
+            const gameState = await api.getGameState(inputGameId);
+            const gameType = gameState.gameType || 'momo_massacre';
+
+            // For non-mystery games (like Imposter), skip avatar step and join directly
+            if (gameType !== 'momo_massacre') {
+                const data = await api.joinGame(inputGameId, name, null);
+                if (data.player) {
+                    sessionStorage.setItem('playerId', data.player.id);
+                    sessionStorage.setItem('gameId', inputGameId);
+                    router.push(`/player/${data.player.id}`);
+                }
+            } else {
+                // For mystery games, proceed to avatar step
+                setStep(2);
+            }
+        } catch (err) {
+            alert(err.message || "Failed to check game");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -133,10 +155,10 @@ export default function JoinForm({ initialGameId = '' }) {
                 <button
                     type="submit"
                     className="btn"
-                    disabled={!inputGameId || !name}
-                    style={{ width: '100%', padding: '15px', opacity: (!inputGameId || !name) ? 0.5 : 1 }}
+                    disabled={!inputGameId || !name || loading}
+                    style={{ width: '100%', padding: '15px', opacity: (!inputGameId || !name || loading) ? 0.5 : 1 }}
                 >
-                    NEXT
+                    {loading ? 'CHECKING...' : 'NEXT'}
                 </button>
             </form>
         );

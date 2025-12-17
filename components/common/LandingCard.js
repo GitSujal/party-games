@@ -34,9 +34,9 @@ export default function LandingCard({ onJoinGame, onHostGame, onShowGuide }) {
 
     return (
         <div style={cardStyle}>
-            <h1 style={titleStyle}>The Momo Massacre</h1>
+            <h1 style={titleStyle}>Party Games</h1>
             <p style={{ color: '#888', marginBottom: '40px', fontSize: '1.1rem' }}>
-                A Murder Mystery Dinner Party
+                Interactive Social Deduction & Mysteries
             </p>
 
             <div style={{ marginBottom: '30px' }}>

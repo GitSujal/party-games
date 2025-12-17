@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
-import JoinForm from '../components/JoinForm';
+import JoinForm from '../components/common/JoinForm';
+import SEOHead from '../components/common/SEOHead';
 
 export default function Join() {
     const router = useRouter();

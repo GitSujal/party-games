@@ -1,0 +1,47 @@
+{
+    "id": "imposter",
+    "name": "Imposter",
+    "description": "A game of deception. Find the imposter who doesn't know the secret word.",
+    "minPlayers": 3,
+    "maxPlayers": 20,
+    "phases": [
+        {
+            "id": "LOBBY",
+            "type": "lobby",
+            "next": "ASSIGN"
+        },
+        {
+            "id": "ASSIGN",
+            "type": "imposter_assign",
+            "title": "Secret Word",
+            "instruction": "Memorize your word. If you are the Imposter, try to blend in!",
+            "next": "PLAYING"
+        },
+        {
+            "id": "PLAYING",
+            "type": "imposter_playing",
+            "title": "Discussion",
+            "instruction": "Take turns saying a word related to the secret word. Vote when ready.",
+            "next": "VOTING"
+        },
+        {
+            "id": "VOTING",
+            "type": "imposter_voting",
+            "title": "Who is the Imposter?",
+            "instruction": "Vote for the player you suspect.",
+            "next": "ELIMINATION"
+        },
+        {
+            "id": "ELIMINATION",
+            "type": "imposter_elimination",
+            "title": "Elimination",
+            "next": "PLAYING"
+        },
+        {
+            "id": "FINISHED",
+            "type": "finale",
+            "headline": "Game Over",
+            "subtext": "The game has ended."
+        }
+    ]
+}

@@ -6,10 +6,10 @@ import { loadGameRegistry } from '../lib/gameLoader';
 import * as api from '../lib/apiClient';
 
 // Components
-import SEOHead from '../components/SEOHead';
-import LandingCard from '../components/LandingCard';
-import HostSetupModal from '../components/HostSetupModal';
-import GuideModal from '../components/GuideModal';
+import SEOHead from '../components/common/SEOHead';
+import LandingCard from '../components/common/LandingCard';
+import HostSetupModal from '../components/common/HostSetupModal';
+import GuideModal from '../components/common/GuideModal';
 
 export default function Home() {
     const router = useRouter();
@@ -25,21 +25,28 @@ export default function Home() {
             .catch(console.error);
     }, []);
 
-    const handleCreateSession = async (minPlayers) => {
-        const data = await api.createSession(selectedGame, minPlayers, 'HOST');
+    const handleCreateSession = async (minPlayers, gameType) => {
+        // Use gameType from modal, fall back to default if needed
+        const typeToUse = gameType || 'momo_massacre';
+        console.log('[index.js] Creating session with gameType:', typeToUse, 'minPlayers:', minPlayers);
+
+        const data = await api.createSession(typeToUse, minPlayers, 'HOST');
+        console.log('[index.js] Session created:', data);
 
         if (data.gameId && data.hostPin) {
             // Store sensitive data in sessionStorage (active session)
             sessionStorage.setItem('playerId', data.player.id);
             sessionStorage.setItem('hostPin', data.hostPin);
             sessionStorage.setItem('gameId', data.gameId);
-            sessionStorage.setItem('gameType', selectedGame);
+            sessionStorage.setItem('gameType', typeToUse);
+
+            console.log('[index.js] Stored in sessionStorage - gameType:', typeToUse, 'gameId:', data.gameId);
 
             // Persist for recovery in localStorage
             localStorage.setItem('recentSession', JSON.stringify({
                 gameId: data.gameId,
                 hostPin: data.hostPin,
-                gameType: selectedGame,
+                gameType: typeToUse,
                 timestamp: Date.now()
             }));
 
