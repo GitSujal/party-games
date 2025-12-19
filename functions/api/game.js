@@ -322,14 +322,15 @@ function checkRateLimit(ip, action, corsHeaders) {
 // Avatar Generation with Gemini API
 // ============================================================================
 
-async function generateAvatar(base64Image, apiKey, characterInfo, attempt = 1) {
-    console.log(`>>> generateAvatar called (attempt ${attempt}/4)`);
+async function generateAvatar(base64Image, apiKey, characterInfo, attempt = 1, useFallbackModel = false) {
+    console.log(`>>> generateAvatar called (attempt ${attempt}/4, fallback: ${useFallbackModel})`);
     console.log('Image data length:', base64Image ? base64Image.length : 0);
     console.log('Character:', characterInfo);
     console.log('API Key present:', !!apiKey);
 
-    // Use the working model
-    const currentModel = 'gemini-3-pro-image-preview';
+    // Select model: Use fallback after 2 attempts with 502/504 errors
+    const currentModel = useFallbackModel ? 'gemini-2.5-flash-image' : 'gemini-3-pro-image-preview';
+    console.log(`>>> Using model: ${currentModel}`);
 
     const systemPrompt = `**SYSTEM ROLE:**
 You are a high-fidelity cinematic portrait engine specializing in "Character Identity Synthesis." Your objective is to merge a **User Reference Image** with a **Fictional Character Description** to create a seamless, photorealistic murder mystery avatar.
@@ -453,13 +454,19 @@ Apply character accurate clothing, hairstyle, and atmospheric background that ma
     } catch (err) {
         clearTimeout(timeoutId);
 
+        // Check for 502/504 model overload errors
+        const isModelOverloadError =
+            err.message.includes('502') ||
+            err.message.includes('504') ||
+            err.message.includes('overloaded');
+
         // Determine if error is retryable
         const isRetryable =
             err.name === 'AbortError' || // Timeout
             err.message.includes('503') || // Service unavailable
             err.message.includes('429') || // Rate limit
             err.message.includes('UNAVAILABLE') ||
-            err.message.includes('overloaded');
+            isModelOverloadError;
 
         // Retry logic for transient errors
         if (isRetryable && attempt < 4) {
@@ -470,7 +477,14 @@ Apply character accurate clothing, hairstyle, and atmospheric background that ma
             console.log(`>>> Retryable error detected. Waiting ${delaySec}s before attempt ${attempt + 1}/4...`);
             console.warn(`⚠️ WARNING: Total delay of ${delaySec}s may exceed Cloudflare function timeout (30s)`);
             await new Promise(resolve => setTimeout(resolve, delayMs));
-            return generateAvatar(base64Image, apiKey, characterInfo, attempt + 1);
+            
+            // After 2 attempts with 502/504 errors, switch to fallback model
+            const shouldUseFallback = isModelOverloadError && attempt >= 2 && !useFallbackModel;
+            if (shouldUseFallback) {
+                console.log(`>>> Switching to fallback model (gemini-2.5-flash-image) after ${attempt} attempts with model overload errors`);
+            }
+            
+            return generateAvatar(base64Image, apiKey, characterInfo, attempt + 1, shouldUseFallback || useFallbackModel);
         }
 
         // Log final error
