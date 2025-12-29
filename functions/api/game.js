@@ -1104,11 +1104,11 @@ async function adminAction(db, payload, env, corsHeaders, context) {
                         });
                         await Promise.all(roleUpdates);
 
-                        // Go directly to ASSIGN phase and reset voting round
+                        // Store initial imposter count for winning logic
                         await dbRun(
                             db,
-                            "UPDATE games SET phase = 'ASSIGN', current_voting_round = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                            [gameId]
+                            "UPDATE games SET initial_imposter_count = ?, phase = 'ASSIGN', current_voting_round = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            [imposterCount, gameId]
                         );
                     } else {
                         // No new word, go back to LOBBY
@@ -1132,13 +1132,36 @@ async function adminAction(db, payload, env, corsHeaders, context) {
             }
             break;
 
+        case 'CHANGE_WORD':
+            if (!payload.newWord) {
+                return error('newWord required', 400, corsHeaders);
+            }
+            // Update all players who have a WORD roles
+            const wordPlayers = await dbQuery(
+                db,
+                "SELECT id FROM players WHERE game_id = ? AND character_id LIKE 'WORD:%'",
+                [gameId]
+            );
+            
+            const wordUpdates = wordPlayers.results.map(p => {
+                return dbRun(
+                    db,
+                    'UPDATE players SET character_id = ? WHERE id = ?',
+                    [`WORD:${payload.newWord}`, p.id]
+                );
+            });
+            await Promise.all(wordUpdates);
+            break;
+
         case 'START_ROUND_IMPOSTER':
             if (!payload.roles) {
                 return error('roles map required', 400, corsHeaders);
             }
             // Batch update players with their assigned roles/words
             // roles is { playerId: "Imposter" | "Word: XYZ" }
+            let startingImposterCount = 0;
             const updates = Object.entries(payload.roles).map(([pid, role]) => {
+                if (role === 'IMPOSTER') startingImposterCount++;
                 return dbRun(
                     db,
                     'UPDATE players SET character_id = ? WHERE id = ? AND game_id = ?',
@@ -1147,11 +1170,11 @@ async function adminAction(db, payload, env, corsHeaders, context) {
             });
             await Promise.all(updates);
 
-            // Set phase to ASSIGN and reset voting round to 1
+            // Set phase to ASSIGN and reset voting round to 1, store starting imposter count
             await dbRun(
                 db,
-                "UPDATE games SET phase = 'ASSIGN', current_voting_round = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                [gameId]
+                "UPDATE games SET phase = 'ASSIGN', current_voting_round = 1, initial_imposter_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                [startingImposterCount, gameId]
             );
             break;
 
@@ -1217,16 +1240,23 @@ async function adminAction(db, payload, env, corsHeaders, context) {
                 [gameId]
             );
 
-            const imposters = alivePlayers.results.filter(p => p.character_id === 'IMPOSTER').length;
-            const genuinePlayers = alivePlayers.results.filter(p => p.character_id && p.character_id.startsWith('WORD:')).length;
+            const deadPlayers = await dbQuery(
+                db,
+                'SELECT id, character_id FROM players WHERE game_id = ? AND is_alive = 0 AND is_host = 0',
+                [gameId]
+            );
+
+            const impostersRemaining = alivePlayers.results.filter(p => p.character_id === 'IMPOSTER').length;
+            const genuineEliminated = deadPlayers.results.filter(p => p.character_id && p.character_id.startsWith('WORD:')).length;
+            const initialImposterCount = game.initial_imposter_count || 1;
 
             // Only check win conditions if there was an elimination
             if (eliminated.length > 0) {
-                if (imposters === 0) {
-                    // Genuine players win
+                if (impostersRemaining === 0) {
+                    // Genuine players win: all imposters eliminated
                     nextPhase = 'FINISHED';
-                } else if (imposters >= genuinePlayers) {
-                    // Imposters win
+                } else if (genuineEliminated >= initialImposterCount) {
+                    // Imposters win: eliminated genuine players == initial imposter count
                     nextPhase = 'FINISHED';
                 }
             }
@@ -1245,8 +1275,9 @@ async function adminAction(db, payload, env, corsHeaders, context) {
                 eliminated,
                 voteCounts,
                 isTie,
-                impostersRemaining: imposters,
-                genuinePlayersRemaining: genuinePlayers,
+                impostersRemaining,
+                genuineEliminated,
+                initialImposterCount,
                 gameOver: nextPhase === 'FINISHED'
             }, 200, corsHeaders);
 

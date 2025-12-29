@@ -75,6 +75,24 @@ export default function HostImposter({
         onAction('START_ROUND_IMPOSTER', { roles });
     };
 
+    const handleResetGame = () => {
+        if (confirm('Are you sure you want to reset the game? All players will be revived and new roles assigned.')) {
+            const words = gameData.words || [];
+            if (words.length === 0) return;
+            const randomWord = words[Math.floor(Math.random() * words.length)];
+            onAction('RESTART_IMPOSTER', { newWord: randomWord });
+        }
+    };
+
+    const handleChangeWord = () => {
+        const words = gameData.words || [];
+        if (words.length === 0) return;
+        const newWord = words[Math.floor(Math.random() * words.length)];
+        if (confirm(`Change word to "${newWord}"? Current imposters will stay the same.`)) {
+            onAction('CHANGE_WORD', { newWord });
+        }
+    };
+
     return (
         <div style={{
             height: '100vh', display: 'flex', flexDirection: 'column',
@@ -88,44 +106,43 @@ export default function HostImposter({
 
             {/* Header */}
             <div style={{
-                height: '60px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between', padding: '0 20px', background: theme.headerBg, zIndex: 20
+                minHeight: '60px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', padding: '10px 20px', background: theme.headerBg, zIndex: 20,
+                flexWrap: 'wrap', gap: '10px'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer' }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                         <Menu size={28} />
                     </button>
-                    <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)' }}>{manifest.name}</h2>
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)', whiteSpace: 'nowrap' }}>{manifest.name}</h2>
                 </div>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <button
                         onClick={() => setShowHowToPlay(true)}
                         style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            padding: '8px 16px',
+                            padding: '6px 12px',
                             background: 'var(--primary, #00f3ff)',
                             color: '#0a192f',
                             border: 'none',
                             borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '0.9rem',
+                            fontSize: '0.8rem',
                             fontWeight: 'bold',
                             transition: 'transform 0.2s'
                         }}
-                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
                     >
-                        <HelpCircle size={18} />
+                        <HelpCircle size={16} />
                         How to Play
                     </button>
-                    <div style={{ display: 'flex', gap: '20px', fontSize: '0.9rem', color: 'var(--text)', opacity: 0.7 }}>
+                    <div style={{ display: 'flex', gap: '15px', fontSize: '0.8rem', color: 'var(--text)', opacity: 0.7 }}>
                         <span>ID: <strong style={{ color: 'var(--text)' }}>{effectiveGameId}</strong></span>
-                        <span onClick={() => setShowPin(!showPin)} style={{ cursor: 'pointer' }}>
+                        <span onClick={() => setShowPin(!showPin)} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
                             PIN: <strong style={{ color: showPin ? 'var(--primary)' : 'var(--text)' }}>{showPin ? hostPin : '****'}</strong>
                         </span>
                     </div>
@@ -137,15 +154,41 @@ export default function HostImposter({
                 {/* Main Content */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0', overflowY: 'auto' }}>
 
-                    {/* Status Indicator */}
+                    {/* Status and Actions Indicator */}
                     {gameState.phase !== 'LOBBY' && (
-                        <div style={{ margin: '20px 0', textAlign: 'center', zIndex: 60, position: 'relative' }}>
+                        <div style={{
+                            margin: '15px 0', textAlign: 'center', zIndex: 60, position: 'relative',
+                            display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center'
+                        }}>
                             <span style={{
                                 background: 'var(--surface)', padding: '5px 15px', borderRadius: '20px',
-                                border: '1px solid var(--border)', color: 'var(--text)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px'
+                                border: '1px solid var(--border)', color: 'var(--text)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px'
                             }}>
                                 Phase: <strong style={{ color: 'var(--secondary)' }}>{gameState.phase}</strong>
                             </span>
+
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <button
+                                    onClick={handleChangeWord}
+                                    style={{
+                                        padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px',
+                                        background: 'rgba(255,255,255,0.1)', color: 'var(--text)', border: '1px solid var(--border)',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Change Word
+                                </button>
+                                <button
+                                    onClick={handleResetGame}
+                                    style={{
+                                        padding: '6px 12px', fontSize: '0.75rem', borderRadius: '6px',
+                                        background: 'rgba(214, 40, 40, 0.2)', color: '#ff4d4d', border: '1px solid #d62828',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Reset Game
+                                </button>
+                            </div>
                         </div>
                     )}
 

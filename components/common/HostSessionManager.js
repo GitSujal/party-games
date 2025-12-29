@@ -146,6 +146,8 @@ export default function HostSessionManager({ gameId }) {
                 await api.resetGame(gameId, hostPin);
             } else if (subAction === 'START_ROUND_IMPOSTER') {
                 await api.adminAction(gameId, hostPin, 'START_ROUND_IMPOSTER', payload);
+            } else if (subAction === 'CHANGE_WORD') {
+                await api.changeWord(gameId, hostPin, payload.newWord);
             } else if (subAction === 'RESTART_IMPOSTER') {
                 // Pick a random word and restart
                 const words = gameData?.words || [];

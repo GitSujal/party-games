@@ -17,7 +17,8 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
 
     // Calculate imposters and genuine players
     const impostersAlive = alivePlayers.filter(p => p.characterId === 'IMPOSTER').length;
-    const genuineAlive = alivePlayers.filter(p => p.characterId && p.characterId.startsWith('WORD:')).length;
+    const genuineEliminated = eliminatedPlayers.filter(p => p.characterId && p.characterId.startsWith('WORD:')).length;
+    const initialImposterCount = gameState.initialImposterCount || 1;
 
     // Recently eliminated (last round)
     const recentlyEliminated = eliminatedPlayers.slice(-2); // Show last 2 eliminations max
@@ -27,7 +28,7 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
         onAction('SET_PHASE', { phase: 'PLAYING' });
     };
 
-    const gameOver = impostersAlive === 0 || impostersAlive >= genuineAlive;
+    const gameOver = impostersAlive === 0 || genuineEliminated >= initialImposterCount;
 
     // Trigger confetti when winner is revealed
     useEffect(() => {
@@ -60,11 +61,25 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
         }
     }, [revealStep, gameOver]);
 
+    useEffect(() => {
+        if (!isHost) return;
+
+        let timer;
+        if (revealStep === 2) {
+            // Auto-advance from Recently Eliminated to Game Status after 4s
+            timer = setTimeout(() => handleNext(), 4000);
+        } else if (revealStep === 3) {
+            // Auto-advance to Winner or Continue after 3s
+            timer = setTimeout(() => handleNext(), 3000);
+        }
+        return () => clearTimeout(timer);
+    }, [revealStep, isHost]);
+
     const getNextButtonText = () => {
         if (revealStep === 1) return 'REVEAL ELIMINATIONS';
-        if (revealStep === 2) return 'SHOW GAME STATUS';
-        if (revealStep === 3 && gameOver) return 'ANNOUNCE WINNER';
-        if (revealStep === 3 && !gameOver) return 'CONTINUE TO NEXT ROUND';
+        if (revealStep === 2) return 'SKIP TO STATUS';
+        if (revealStep === 3 && gameOver) return 'SKIP TO WINNER';
+        if (revealStep === 3 && !gameOver) return 'START NEXT ROUND';
         if (revealStep === 4 && gameOver) return 'END GAME';
         return 'NEXT';
     };
@@ -240,7 +255,8 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
                     border: '1px solid var(--border, #233554)',
                     width: '100%',
                     maxWidth: '500px',
-                    marginBottom: '30px'
+                    marginBottom: '30px',
+                    animation: 'fadeIn 0.5s ease-out'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
                         <div>
@@ -254,10 +270,13 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
                         <div style={{ borderLeft: '1px solid var(--border, #233554)' }}></div>
                         <div>
                             <p style={{ fontSize: '0.9rem', color: 'var(--text, #e6f1ff)', opacity: 0.7, marginBottom: '5px' }}>
-                                Genuine Players
+                                Genuine Eliminated
                             </p>
                             <p style={{ fontSize: '2rem', color: '#64ffda', fontWeight: 'bold' }}>
-                                {genuineAlive}
+                                {genuineEliminated} / {initialImposterCount}
+                            </p>
+                            <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '5px' }}>
+                                (Target for Imposter win: {initialImposterCount})
                             </p>
                         </div>
                     </div>
@@ -283,7 +302,7 @@ export default function PhaseElimination({ gameData, gameState, onAction, isHost
                     <p style={{ fontSize: '1.2rem', color: 'var(--text, #e6f1ff)' }}>
                         {impostersAlive === 0
                             ? 'All imposters have been eliminated!'
-                            : 'The imposters have taken over!'}
+                            : `The imposters have eliminated ${initialImposterCount} genuine players!`}
                     </p>
                 </div>
             )}

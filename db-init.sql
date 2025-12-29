@@ -18,6 +18,7 @@ CREATE TABLE games (
     phase TEXT DEFAULT 'LOBBY',
     min_players INTEGER DEFAULT 4,
     current_voting_round INTEGER DEFAULT 1, -- For imposter game voting rounds
+    initial_imposter_count INTEGER DEFAULT 1,
     expires_at DATETIME,                -- TTL for game cleanup
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

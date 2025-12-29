@@ -28,11 +28,16 @@ export default function PlayerSessionManager({ playerId }) {
 
         const fetchState = async () => {
             try {
-                const storedGameId = sessionStorage.getItem('gameId') || localStorage.getItem('gameId');
+                let storedGameId = sessionStorage.getItem('gameId') || localStorage.getItem('gameId');
+
                 if (!storedGameId) {
                     setError('Game ID not found. Please rejoin the game.');
                     return;
                 }
+
+                // Ensure both storages have the ID for persistence
+                if (!sessionStorage.getItem('gameId')) sessionStorage.setItem('gameId', storedGameId);
+                if (!localStorage.getItem('gameId')) localStorage.setItem('gameId', storedGameId);
 
                 const state = await api.getGameState(storedGameId);
                 setGameState(state);
@@ -41,6 +46,14 @@ export default function PlayerSessionManager({ playerId }) {
 
                 if (state.gameType && !gameType) {
                     setGameType(state.gameType);
+                }
+
+                // If we're here, double check playerId is persistent
+                if (!localStorage.getItem('playerId') && playerId) {
+                    localStorage.setItem('playerId', playerId);
+                }
+                if (!sessionStorage.getItem('playerId') && playerId) {
+                    sessionStorage.setItem('playerId', playerId);
                 }
             } catch (err) {
                 errorCount++;

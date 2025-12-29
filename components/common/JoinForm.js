@@ -20,6 +20,22 @@ export default function JoinForm({ initialGameId = '' }) {
         }
     }, [initialGameId]);
 
+    // Check for existing session on mount
+    useEffect(() => {
+        const storedPlayerId = localStorage.getItem('playerId');
+        const storedGameId = localStorage.getItem('gameId') || initialGameId;
+
+        if (storedPlayerId && storedGameId) {
+            console.log('[JoinForm] Found existing session:', { storedPlayerId, storedGameId });
+            // Optionally we could auto-redirect, but let's just pre-fill for now
+            // or we can just redirect if we are on the join page with no params
+            if (!initialGameId || initialGameId === storedGameId) {
+                setInputGameId(storedGameId);
+                // We'll let the user click join to confirm, but we could also auto-join
+            }
+        }
+    }, [initialGameId]);
+
     // Cleanup camera stream on unmount
     useEffect(() => {
         return () => {
@@ -92,6 +108,8 @@ export default function JoinForm({ initialGameId = '' }) {
                 if (data.player) {
                     sessionStorage.setItem('playerId', data.player.id);
                     sessionStorage.setItem('gameId', inputGameId);
+                    localStorage.setItem('playerId', data.player.id);
+                    localStorage.setItem('gameId', inputGameId);
                     router.push(`/player/${data.player.id}`);
                 }
             } else {
@@ -119,6 +137,8 @@ export default function JoinForm({ initialGameId = '' }) {
                 }
                 sessionStorage.setItem('playerId', data.player.id);
                 sessionStorage.setItem('gameId', inputGameId);
+                localStorage.setItem('playerId', data.player.id);
+                localStorage.setItem('gameId', inputGameId);
                 router.push(`/player/${data.player.id}`);
             }
         } catch (err) {
