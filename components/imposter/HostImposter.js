@@ -88,7 +88,7 @@ export default function HostImposter({
         const words = gameData.words || [];
         if (words.length === 0) return;
         const newWord = words[Math.floor(Math.random() * words.length)];
-        if (confirm(`Change word to "${newWord}"? Current imposters will stay the same.`)) {
+        if (confirm(`Are you sure you want to change the word for all genuine players? Imposters will stay the same.`)) {
             onAction('CHANGE_WORD', { newWord });
         }
     };
