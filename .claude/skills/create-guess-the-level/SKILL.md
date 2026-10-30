@@ -18,7 +18,7 @@ lobby every question in the chosen categories is used before any repeats. So jus
 ### 1. Gather the levels
 
 For each level, pin down:
-- **Category**: one of the ids in `src/games/guess-the/categories.ts` (`movie`, `actor`, `word`, `phrase`, `sports-person`, …).
+- **Category**: one of the ids in `src/games/guess-the/categories.ts` (`movie`, `actor`, `nepali-surnames`, …).
 - **Answer**: exactly as it should appear on the TV at reveal, properly cased ("The Lion King").
 - **Aliases** (`--accept`): only what the matcher would NOT already accept (see below). Nicknames ("The Rock"), surname or first name alone for famous people ("Messi"), abbreviations ("LOTR", "SRK"), and alternate or translated titles.
 - **Clues** (1–5): where the images come from (see step 2).
@@ -47,11 +47,11 @@ node .claude/skills/create-guess-the-level/find-image.mjs "ice cube" --limit 8
 ```
 It checks Wikidata first (the canonical photo of a person or landmark), then searches Wikimedia
 Commons. Each candidate lists its license, author, a 960px `url` and a ready-made `--credit`.
-Everything on Commons is free to use with that credit. Then:
+Use the credit string it prints. Then:
 1. **Look at it before using it.** Download a candidate to the scratchpad (`curl -sA "PartyGamesLevels/1.0" -o "$SCRATCH/c.jpg" "<url>"`) and Read it. Check that it's the right subject, clear at TV size, free of a caption or watermark naming the answer, and the right difficulty for that clue position.
-2. Pass the `url` as the clue and its `--credit` string to `add-level.mjs`. The script **downloads** the image and stores it under an opaque name. Never reference a web URL directly: clue URLs reach the phones before the reveal, and names like `Eiffel_Tower.jpg` give the answer away.
+2. Pass the `url` as the clue and its `--credit` string to `add-level.mjs`. The script **downloads** the image by default and stores it under an opaque name. A web URL may also be used directly as the clue `src`: the game loads it from its host. Clue URLs reach the phones before the reveal, so avoid URLs whose file names give the answer away (e.g. `Eiffel_Tower.jpg`).
 
-If Wikimedia has nothing good, a general web search (WebSearch / WebFetch) is fine for finding an image, but **only use it if the license allows reuse**: public domain, CC0, CC BY or CC BY-SA, or an explicit free license such as Unsplash or Pexels. Record its credit. Don't use stock-photo previews, press photos, movie posters, album art or anything without a clear license. If that leaves you stuck, describe the subject with an emoji or text clue, or generate an image.
+If Wikimedia has nothing good, a general web search (WebSearch / WebFetch) is fine for finding an image. Record its source as the credit (`Photo: <author or site>`). If that leaves you stuck, describe the subject with an emoji or text clue, or generate an image.
 
 **Video clues** (actions)
 ```bash
@@ -61,7 +61,7 @@ Pass the video `url` with `@start-end` (in seconds) to cut it to the action, e.g
 Aim for 3–8 seconds. Every video, and every GIF, becomes a **silent**, metadata-free H.264 MP4 that fits within
 1280×720 and starts fast; the game plays it muted and looping. The script prints a **frame sheet** (8 frames on one
 PNG): Read it before keeping the clip, and check for captions, scoreboards, name bibs and logos. Clips over 3 MB get a
-warning. No YouTube, TikTok or other platform rips: only free-licensed clips (Commons) or the user's own.
+warning. Prefer Commons clips or the user's own footage; avoid platform rips such as YouTube or TikTok.
 
 **Generating** (last resort) uses the user's local API at `http://localhost:8000` (Qwen Image for pictures, MiniMax H3
 for video). Its full reference is `docs/API.md` in the user's `imagegen` project (`C:/Users/sujal/Documents/static_repo/Personal/imagegen`).
@@ -82,7 +82,7 @@ folder. Never start it yourself.
 - Generated media needs no credit.
 - For anything the script doesn't cover (edits with reference images, the prompt enhancer, continuing a clip), call the API directly per its reference, save the file to the scratchpad and pass the path.
 
-**Credits**: every `--credit` goes into the level's `credits` list. The TV shows credits in small type **at the reveal only**, because they can name the subject. Twemoji credit is added automatically. Use the credit string `find-image.mjs` prints; for other sources write `Photo: <author> / <site>, <license>`.
+**Credits**: every `--credit` goes into the level's `credits` list. The TV shows credits in small type **at the reveal only**, because they can name the subject. Twemoji credit is added automatically. Use the credit string `find-image.mjs` prints; for other sources write `Photo: <author or site>`.
 
 Good clue design:
 - **Order clues from hardest to easiest.** The first clue alone should be hard; the last should nearly give it away.
@@ -108,8 +108,8 @@ node .claude/skills/create-guess-the-level/add-level.mjs word "Pancake" "text:Pa
 node .claude/skills/create-guess-the-level/add-level.mjs movie "Ratatouille" "emoji:🐀" "emoji:👨‍🍳" \
   "https://thumb.wikimedia.org/…/960px-Tour_Eiffel_Wikimedia_Commons.jpg" \
   --credit "Image: Benh LIEU SONG / Wikimedia Commons (Public domain)"
-node .claude/skills/create-guess-the-level/add-level.mjs sports-person "Cristiano Ronaldo" --accept "Ronaldo" --accept "CR7" \
-  "emoji:🇵🇹" "text:7" ./photos/stadium.jpg --dry-run
+node .claude/skills/create-guess-the-level/add-level.mjs actor "Tom Cruise" --accept "Cruise" \
+  "emoji:✈️" "text:1986" ./photos/cruise.jpg --dry-run
 ```
 
 The script:

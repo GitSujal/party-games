@@ -208,8 +208,8 @@ async function momo() {
 
 async function guessThe() {
     console.log('\nGuess The');
-    const onlyWords = { 'category:movie': false, 'category:actor': false, 'category:phrase': false, 'category:sports-person': false };
-    const room = await http('POST', '/api/rooms', { gameId: 'guess-the', settings: { questions: 2, answerSeconds: 0, ...onlyWords } });
+    const onlyMovies = { 'category:actor': false, 'category:nepali-surnames': false };
+    const room = await http('POST', '/api/rooms', { gameId: 'guess-the', settings: { questions: 2, answerSeconds: 0, ...onlyMovies } });
     const host = await connect(room.code, room.hostToken);
     const seats = [];
     for (const name of ['Ann', 'Ben', 'Cat']) seats.push(await http('POST', `/api/rooms/${room.code}/join`, { name }));
@@ -219,7 +219,7 @@ async function guessThe() {
     await host.send('room:start');
     await host.until(phaseIs(host, 'guessing'));
     const q = host.state.game.question;
-    check(q.prompt === 'Guess the Word', 'only the chosen category is dealt');
+    check(q.prompt === 'Guess the Movie', 'only the chosen category is dealt');
     check(q.images.length >= 1 && q.images.length <= 5, `${q.images.length} clue image(s)`);
     const img = await fetch(BASE + q.images[0]);
     check(img.ok, 'clue image is served');

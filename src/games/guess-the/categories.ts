@@ -6,9 +6,7 @@
 export const CATEGORIES = [
     { id: 'movie', name: 'Movie' },
     { id: 'actor', name: 'Actor' },
-    { id: 'word', name: 'Word' },
-    { id: 'phrase', name: 'Phrase' },
-    { id: 'sports-person', name: 'Sports Person' },
+    { id: 'nepali-surnames', name: 'Nepali Surnames' },
 ] as const;
 
 export type CategoryId = (typeof CATEGORIES)[number]['id'];

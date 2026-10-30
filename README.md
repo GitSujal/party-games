@@ -9,7 +9,7 @@ with a QR code. No app, no accounts.
 | --- | --- | --- |
 | 🕵️ **Imposter** | 3–20 | Everyone gets the secret word except the imposters. Give clues, vote, and catch the fakes. |
 | 🥟 **The Momo Massacre** | 3–14 | A hosted murder-mystery dinner with characters, secrets, clues and a poisoned Momo King. |
-| 🖼️ **Guess The** | 1–20 | Picture-clue quiz: guess the movie, actor, word, phrase or sports person from 1–5 images. Fastest correct answers score most. |
+| 🖼️ **Guess The** | 1–20 | Picture-clue quiz: guess the movie, actor or Nepali surname from 1–5 images. Fastest correct answers score most. |
 
 ## How it works
 

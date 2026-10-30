@@ -56,10 +56,10 @@ describe('guess-the: start', () => {
     });
 
     it('only deals questions from the chosen categories', () => {
-        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'word').map(c => [categoryKey(c.id), false]));
+        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
         const h = started({ ...off, questions: 50 });
-        expect(h.state.total).toBe(Object.keys(QUESTIONS).filter(k => k.startsWith('word/')).length);
-        expect([h.state.current!.key, ...h.state.deck].every(k => k.startsWith('word/'))).toBe(true);
+        expect(h.state.total).toBe(Object.keys(QUESTIONS).filter(k => k.startsWith('movie/')).length);
+        expect([h.state.current!.key, ...h.state.deck].every(k => k.startsWith('movie/'))).toBe(true);
     });
 
     it('refuses to start with no categories', () => {
@@ -177,7 +177,7 @@ describe('guess-the: guessing and reveal', () => {
     });
 
     it('refuses to skip when the deck is empty', () => {
-        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'word').map(c => [categoryKey(c.id), false]));
+        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
         const h = started({ ...off, questions: 50 });
         while (h.state.deck.length) h.act('skip', HOST);
         expect(() => h.act('skip', HOST)).toThrow(/No more questions/);
@@ -234,7 +234,8 @@ describe('guess-the: no repeats', () => {
         const total = Object.keys(QUESTIONS).length;
         let previous: typeof h.state | undefined;
         const history: string[] = [];
-        for (let game = 0; game < 4; game++) {
+        // Enough games (6 questions each) to cover one full pass, plus one more.
+        for (let game = 0; game < Math.ceil(total / 6) + 1; game++) {
             const { s, keys } = playGame(h, previous);
             expect(new Set(keys).size).toBe(keys.length);
             history.push(...keys);
@@ -248,11 +249,11 @@ describe('guess-the: no repeats', () => {
     });
 
     it('keeps the bag per category selection', () => {
-        const onlyWords = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'word').map(c => [categoryKey(c.id), false]));
+        const onlyWords = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
         const h = started({ ...onlyWords, questions: 2 });
         const a = playGame(h);
         const b = playGame(h, a.s);
-        expect([...a.keys, ...b.keys].every(k => k.startsWith('word/'))).toBe(true);
+        expect([...a.keys, ...b.keys].every(k => k.startsWith('movie/'))).toBe(true);
         expect(new Set([...a.keys, ...b.keys]).size).toBe(4);
     });
 });

@@ -7,7 +7,7 @@ export default defineMeta({
     name: 'Guess The',
     tagline: 'Read the picture clues and name it before anyone else.',
     description:
-        'Each question shows one to five picture clues: guess the movie, the actor, the word, the phrase or the sports person. Type your answer on your phone. Correct answers score points, with a bonus for speed. The big screen reveals the answer once everyone is in.',
+        'Each question shows one to five picture clues: guess the movie, the actor or the Nepali surname. Type your answer on your phone. Correct answers score points, with a bonus for speed. The big screen reveals the answer once everyone is in.',
     players: { min: 1, max: 20 },
     duration: '10–20 min',
     tags: ['Quiz', 'Pictures', 'Quick'],
