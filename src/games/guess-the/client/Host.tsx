@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Layers, RotateCcw } from 'lucide-react';
 import type { GameScreenProps } from '../../../platform/client/types';
 import { PLATFORM_ACTIONS } from '../../../platform/protocol';
 import type { Player } from '../../../platform/sdk';
-import { Button, ConfirmButton, Countdown, useAction } from '../../../ui';
+import { Button, ConfirmButton, Countdown, Modal, useAction } from '../../../ui';
 import { Clues, nameOf, useGuessEvents, type View } from './shared';
 
 /** Standings with each player's status: answered (while guessing) or their guess (at the reveal). */
@@ -40,6 +41,38 @@ function Standings({ game, players }: { game: View; players: Player[] }) {
                 );
             })}
         </section>
+    );
+}
+
+/** Switch categories on or off while the game is running. */
+function CategoriesButton({ game, send }: { game: View; send: GameScreenProps<View>['send'] }) {
+    const [open, setOpen] = useState(false);
+    const [act, busy] = useAction(send);
+    const enabled = game.categories.filter(c => c.enabled).length;
+    return (
+        <>
+            <Button variant="ghost" icon={<Layers size={16} />} onClick={() => setOpen(true)}>
+                Categories · {enabled} of {game.categories.length}
+            </Button>
+            <Modal open={open} onClose={() => setOpen(false)} title="Categories">
+                <div className="pg-stack" style={{ ['--gap' as string]: '10px' }}>
+                    <p className="pg-muted" style={{ margin: 0 }}>
+                        Changes apply from the next question.
+                    </p>
+                    {game.categories.map(c => (
+                        <label key={c.id} className="pg-switch">
+                            <input type="checkbox" checked={c.enabled} disabled={busy} onChange={e => act('setCategory', { id: c.id, enabled: e.target.checked })} />
+                            <span className="pg-label">
+                                {c.name} <span className="pg-muted">· {c.left} left</span>
+                            </span>
+                        </label>
+                    ))}
+                    <Button variant="primary" icon={<Check size={16} />} onClick={() => setOpen(false)}>
+                        Done
+                    </Button>
+                </div>
+            </Modal>
+        </>
     );
 }
 
@@ -128,6 +161,7 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
                 <Button variant="ink" size="lg" block loading={busy} onClick={() => act('next')}>
                     {game.isLast ? 'Final scores' : 'Next question'}
                 </Button>
+                <CategoriesButton game={game} send={send} />
                 {!game.isLast && (
                     <ConfirmButton variant="ghost" confirmLabel="End now" onConfirm={() => act('end')}>
                         End game
@@ -149,6 +183,7 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
             <ConfirmButton variant="ink" size="lg" block confirmLabel="Reveal now" onConfirm={() => act('reveal')}>
                 Reveal answer
             </ConfirmButton>
+            <CategoriesButton game={game} send={send} />
             {game.canSkip && (
                 <ConfirmButton variant="ghost" confirmLabel="Skip it" onConfirm={() => act('skip')}>
                     Skip question

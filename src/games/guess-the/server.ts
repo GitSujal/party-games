@@ -107,7 +107,8 @@ function shuffleMixed(keys: string[], ctx: Ctx): string[] {
 
 /** Unseen questions first (shuffled); already-seen ones only after the bag runs dry. */
 function buildDeck(state: State, ctx: Ctx): string[] {
-    const pool = poolOf(ctx.settings);
+    // Questions already played in this game are never dealt again.
+    const pool = poolOf(ctx.settings).filter(k => !state.dealt.includes(k));
     const unseen = pool.filter(k => !state.seen.includes(k));
     const seen = pool.filter(k => state.seen.includes(k));
     return [...shuffleMixed(unseen, ctx), ...shuffleMixed(seen, ctx)];
@@ -182,7 +183,7 @@ function submit(state: State, ctx: Ctx, playerId: string, text: string | null): 
     if (everyoneIn(state)) reveal(state, ctx);
 }
 
-function view(state: State, viewer: Viewer) {
+function view(state: State, viewer: Viewer, { settings }: Ctx) {
     const me = viewer.playerId;
     const inGame = !!me && state.participants.includes(me);
     const q = state.current ? QUESTIONS[state.current.key] : null;
@@ -202,6 +203,13 @@ function view(state: State, viewer: Viewer) {
         reveal: state.phase === 'reveal' ? state.reveal : null,
         leaderboard: board,
         canSkip: state.deck.length > 0,
+        /** Enabled categories, and how many unplayed questions each still has. */
+        categories: CATEGORIES.map(c => ({
+            id: c.id,
+            name: c.name,
+            enabled: settings[categoryKey(c.id)] !== false,
+            left: Object.values(QUESTIONS).filter(q => q.category === c.id && !state.dealt.includes(q.key)).length,
+        })),
         isLast: state.round >= state.total || state.deck.length === 0,
         me: inGame
             ? {
@@ -218,6 +226,7 @@ function view(state: State, viewer: Viewer) {
 
 export type View = ReturnType<typeof view>;
 
+const categoryToggle = z.object({ id: z.string(), enabled: z.boolean() });
 const guess = z.object({ text: z.string().trim().min(1, 'Type a guess').max(80) });
 
 export default defineServer<State, Settings>({
@@ -286,6 +295,23 @@ export default defineServer<State, Settings>({
                 if (state.round >= state.total || state.deck.length === 0) return finish(state, ctx);
                 state.round++;
                 openQuestion(state, ctx);
+            },
+        }),
+
+        /** Switch categories on or off mid-game. Takes effect from the next question. */
+        setCategory: defineAction<State, Settings, z.infer<typeof categoryToggle>>({
+            by: 'host',
+            schema: categoryToggle,
+            handle(state, { id, enabled }, ctx) {
+                assertPhase(state.phase, 'guessing', 'reveal');
+                if (!CATEGORIES.some(c => c.id === id)) throw new GameError('Unknown category');
+                // Persisted in the room's settings, so the lobby and play-again keep the choice.
+                ctx.settings[categoryKey(id)] = enabled;
+                const deck = buildDeck(state, ctx);
+                if (deck.length === 0) throw new GameError('Keep at least one category with questions left');
+                state.deck = deck;
+                // The current question counts as played, so it is kept when it is not yet revealed.
+                state.total = Math.min(ctx.settings.questions, state.round + deck.length);
             },
         }),
 

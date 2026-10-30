@@ -321,3 +321,27 @@ describe('guess-the: secrecy', () => {
         for (const a of allAnswers) expect(json).not.toContain(a);
     });
 });
+
+describe('guess-the: changing categories mid-game', () => {
+    it('applies to upcoming questions only and never replays a played one', () => {
+        const h = started({ questions: 50 });
+        const first = h.state.current!.key;
+        const [keep] = CATEGORIES;
+        for (const c of CATEGORIES.slice(1)) h.act('setCategory', HOST, { id: c.id, enabled: false });
+        expect(h.state.current!.key).toBe(first);
+        expect(h.state.deck.every(k => QUESTIONS[k].category === keep.id)).toBe(true);
+        expect(h.state.deck).not.toContain(first);
+        expect(h.view(HOST).categories.filter((c: { enabled: boolean }) => c.enabled).map((c: { id: string }) => c.id)).toEqual([keep.id]);
+    });
+
+    it('can add a category back and refuses to leave nothing to play', () => {
+        const h = started({ questions: 50 });
+        for (const c of CATEGORIES.slice(1)) h.act('setCategory', HOST, { id: c.id, enabled: false });
+        const before = h.state.deck.length;
+        h.act('setCategory', HOST, { id: CATEGORIES[1].id, enabled: true });
+        expect(h.state.deck.length).toBeGreaterThan(before);
+        expect(() => {
+            for (const c of CATEGORIES) h.act('setCategory', HOST, { id: c.id, enabled: false });
+        }).toThrow();
+    });
+});

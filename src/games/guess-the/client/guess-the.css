@@ -109,3 +109,26 @@
     }
 
 }
+
+.guess-clues img,
+.guess-clues video {
+    cursor: zoom-in;
+}
+
+.guess-zoom {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.92);
+    cursor: zoom-out;
+}
+
+.guess-zoom img,
+.guess-zoom video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}

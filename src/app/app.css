@@ -215,6 +215,8 @@
     }
 
     .detail__host {
+        /* On narrow screens the way to start hosting comes before the rules. */
+        order: -1;
         position: static;
         max-width: none;
     }

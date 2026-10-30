@@ -3,8 +3,8 @@
  * top bar with room code/PIN, player management drawer, play again, rules.
  */
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { HelpCircle, Menu, RotateCcw, Undo2, UserX, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { HelpCircle, LogOut, Menu, RotateCcw, Undo2, UserX, X } from 'lucide-react';
 import { findMeta } from '../../games/catalog';
 import { EventBus, EventProvider } from '../../platform/client/events';
 import { getSession } from '../../platform/client/session';
@@ -22,6 +22,7 @@ export function HostShell({ code }: { code: string }) {
     const meta = room ? findMeta(room.gameId) : undefined;
     const { client, error } = useGameClient(room?.gameId);
     const [act] = useAction(send);
+    const navigate = useNavigate();
     const [drawer, setDrawer] = useState(false);
     const [rules, setRules] = useState(false);
     const [showPin, setShowPin] = useState(false);
@@ -51,6 +52,9 @@ export function HostShell({ code }: { code: string }) {
         <EventProvider bus={bus}>
             <div className="pg-shell">
                 <header className="pg-topbar">
+                    <IconButton label="Room menu" onClick={() => setDrawer(true)}>
+                        <Menu size={18} />
+                    </IconButton>
                     <span className="pg-topbar__title">
                         <span className="pg-dot" aria-hidden />
                         {meta.name}
@@ -67,9 +71,6 @@ export function HostShell({ code }: { code: string }) {
                             <HelpCircle size={18} />
                         </IconButton>
                     )}
-                    <IconButton label="Room menu" onClick={() => setDrawer(true)}>
-                        <Menu size={18} />
-                    </IconButton>
                 </header>
 
                 <main className="pg-shell__main">
@@ -117,20 +118,25 @@ export function HostShell({ code }: { code: string }) {
                                     )}
                                 </section>
 
-                                {room.status === 'playing' && (
-                                    <section className="pg-stack" style={{ ['--gap' as string]: '10px' }}>
-                                        <h4 className="pg-section-title">Game</h4>
-                                        <ConfirmButton icon={<RotateCcw size={16} />} confirmLabel="Restart now" onConfirm={() => act(PLATFORM_ACTIONS.playAgain).then(() => setDrawer(false))}>
-                                            Restart with same players
-                                        </ConfirmButton>
-                                        <ConfirmButton icon={<Undo2 size={16} />} confirmLabel="Back to lobby" onConfirm={() => act(PLATFORM_ACTIONS.backToLobby).then(() => setDrawer(false))}>
-                                            End game, back to lobby
-                                        </ConfirmButton>
-                                    </section>
-                                )}
+                                <section className="pg-stack" style={{ ['--gap' as string]: '10px' }}>
+                                    <h4 className="pg-section-title">Game</h4>
+                                    {room.status === 'playing' && (
+                                        <>
+                                            <ConfirmButton icon={<RotateCcw size={16} />} confirmLabel="Restart now" onConfirm={() => act(PLATFORM_ACTIONS.playAgain).then(() => setDrawer(false))}>
+                                                Restart with same players
+                                            </ConfirmButton>
+                                            <ConfirmButton icon={<Undo2 size={16} />} confirmLabel="Back to lobby" onConfirm={() => act(PLATFORM_ACTIONS.backToLobby).then(() => setDrawer(false))}>
+                                                Reset to lobby (keep players)
+                                            </ConfirmButton>
+                                        </>
+                                    )}
+                                    <ConfirmButton icon={<LogOut size={16} />} confirmLabel="Close for everyone" onConfirm={() => act(PLATFORM_ACTIONS.close).then(ok => ok && navigate('/'))}>
+                                        Close room, back to main menu
+                                    </ConfirmButton>
+                                </section>
 
                                 <Link to="/" className="pg-link">
-                                    All games (the room stays open)
+                                    Main menu (the room stays open)
                                 </Link>
                             </div>
                         </aside>

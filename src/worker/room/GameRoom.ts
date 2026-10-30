@@ -352,6 +352,11 @@ export class GameRoom extends DurableObject<Env> {
                 });
                 return;
             }
+            case PLATFORM_ACTIONS.close: {
+                // Let the ack reach the host before the sockets are closed.
+                this.ctx.waitUntil(new Promise<void>(resolve => setTimeout(resolve, 50)).then(() => this.destroy()));
+                return;
+            }
             case PLATFORM_ACTIONS.kick: {
                 const playerId = (payload as { playerId?: unknown } | undefined)?.playerId;
                 if (typeof playerId !== 'string') throw new GameError('playerId required');
@@ -551,7 +556,7 @@ export class GameRoom extends DurableObject<Env> {
 
     private async destroy(): Promise<void> {
         const code = this.room?.code;
-        for (const ws of this.ctx.getWebSockets()) ws.close(CLOSE.roomClosed, 'Room expired');
+        for (const ws of this.ctx.getWebSockets()) ws.close(CLOSE.roomClosed, 'Room closed');
         if (code && this.env.MEDIA) {
             await deletePrefix(this.env.MEDIA, mediaPrefix(code)).catch(err => console.error('Media cleanup failed', err));
         }

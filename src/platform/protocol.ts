@@ -16,6 +16,7 @@ export const PLATFORM_ACTIONS = {
     kick: 'room:kick',
     playAgain: 'room:playAgain',
     backToLobby: 'room:backToLobby',
+    close: 'room:close',
     updateSettings: 'room:updateSettings',
 } as const;
 

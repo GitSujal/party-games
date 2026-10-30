@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Player } from '../../../platform/sdk';
 import { fireConfetti, useGameEvent, useToast } from '../../../ui';
 import type { View } from '../server';
@@ -56,6 +57,21 @@ export function fitClues(ratios: number[], boxW: number, boxH: number, gap: numb
     return best!.rows;
 }
 
+/** One clue filling the screen. Tap anywhere (or press Escape) to go back. */
+function Fullscreen({ src, onClose }: { src: string; onClose: () => void }) {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
+    return createPortal(
+        <div className="guess-zoom" onClick={onClose} role="dialog" aria-label="Clue, tap to close">
+            {VIDEO.test(src) ? <video src={src} autoPlay muted loop playsInline disablePictureInPicture /> : <img src={src} alt="Clue" draggable={false} />}
+        </div>,
+        document.body
+    );
+}
+
 /** The 1–5 clues (pictures or short clips), each keeping its own shape and sized to the space. */
 export function Clues({ images, compact }: { images: string[]; compact?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -63,6 +79,7 @@ export function Clues({ images, compact }: { images: string[]; compact?: boolean
     // Natural shape of each clue, learned when it loads (clips report their video size).
     const [ratioBy, setRatioBy] = useState<Record<string, number>>({});
     const gap = compact ? 8 : GAP;
+    const [zoom, setZoom] = useState<string | null>(null);
 
     useEffect(() => {
         const el = ref.current;
@@ -88,10 +105,10 @@ export function Clues({ images, compact }: { images: string[]; compact?: boolean
         const style = size ? { width: size.w, height: size.h } : undefined;
         return VIDEO.test(src) ? (
             // Short action clips: silent, looping, inline (muted autoplay works on every phone).
-            <video key={src} src={src} style={style} aria-label={`Clue ${i + 1}`} autoPlay muted loop playsInline preload="auto" disablePictureInPicture
+            <video key={src} src={src} style={style} aria-label={`Clue ${i + 1}`} autoPlay muted loop playsInline preload="auto" disablePictureInPicture onClick={() => setZoom(src)}
                 onLoadedMetadata={e => learn(src, e.currentTarget.videoWidth, e.currentTarget.videoHeight)} />
         ) : (
-            <img key={src} src={src} style={style} alt={`Clue ${i + 1}`} draggable={false}
+            <img key={src} src={src} style={style} alt={`Clue ${i + 1}`} draggable={false} onClick={() => setZoom(src)}
                 onLoad={e => learn(src, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)} />
         );
     };
@@ -106,6 +123,7 @@ export function Clues({ images, compact }: { images: string[]; compact?: boolean
                   ))
                 : // Before the box is measured: a simple grid, so nothing jumps on first paint.
                   images.map((src, i) => media(src, i))}
+            {zoom && <Fullscreen src={zoom} onClose={() => setZoom(null)} />}
         </div>
     );
 }

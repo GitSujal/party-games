@@ -687,12 +687,12 @@ input[type='range'] {
 .pg-drawer {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     bottom: 0;
     width: min(380px, 92vw);
     z-index: 61;
     background: var(--pg-surface);
-    border-left: 1px solid var(--pg-border);
+    border-right: 1px solid var(--pg-border);
     display: flex;
     flex-direction: column;
     animation: pg-slide-in 0.25s var(--pg-ease);
@@ -1088,7 +1088,7 @@ input[type='range'] {
 
 @keyframes pg-slide-in {
     from {
-        transform: translateX(100%);
+        transform: translateX(-100%);
     }
 }
 
