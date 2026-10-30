@@ -1,335 +1,98 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file guides Claude Code (claude.ai/code) when working in this repository.
 
 ## Overview
 
-This is a multiplayer party game platform built with Next.js (static export) and deployed on Cloudflare Pages with D1 database. Players join games via QR codes on their phones, while a host controls the game flow through a separate interface. The platform supports two game types with real-time synchronization between host and players:
+**Party Games** (partygames.datasparta.com) is a platform for phone-controlled party games.
+A host opens a game on a big screen, and players join by scanning a QR code. Every game
+shares the same infrastructure: rooms, realtime sync, auth, lobby, mechanics and UI kit.
+A game itself is a self-contained folder in `src/games/<id>/`.
 
-1. **Murder Mystery** (`momo_massacre`): Story-driven investigation game with character roles, clues, and narrative phases
-2. **Imposter** (`imposter`): Social deduction game similar to Werewolf/Mafia where players vote to eliminate imposters who don't know the secret word
+Current games: **Imposter** (`imposter`, social deduction), **The Momo Massacre**
+(`momo-massacre`, hosted murder mystery) and **Guess The** (`guess-the`, picture-clue quiz).
 
-## Development Commands
+## Stack
 
-**Local Development:**
-```bash
-npm run dev
-# Builds static site, then runs Cloudflare Pages dev server on port 3000
-# Automatically binds to local D1 database
-```
+- **One Cloudflare Worker** (`src/worker/index.ts`, Hono) serves the API and exports the `GameRoom` Durable Object. Static assets (the SPA) are served by Workers static assets; `/api/*` runs the Worker first.
+- **One Durable Object per room** (`src/worker/room/GameRoom.ts`) holds all state in DO storage (no database) and talks to clients over hibernatable WebSockets.
+- **Vite + React 19 + React Router** SPA (`src/app`), built with `@cloudflare/vite-plugin`, so `npm run dev` runs the SPA, Worker and DO together in workerd.
+- **TypeScript** throughout, with **zod** for validation, **R2** (`MEDIA`) for player photos and AI portraits, and **Workers Rate Limiting** bindings.
+- Dependencies stay on the latest major version, or N-1 at most. (Vitest is on 4 because `@cloudflare/vitest-pool-workers` requires it.)
 
-**Build:**
-```bash
-npm run build
-# Generates static Next.js export to ./out directory
-```
-
-**Database:**
-```bash
-# Initialize database schema (first time setup)
-npm run db:init
-
-# Create D1 database (one-time)
-npx wrangler d1 create murder-mystery-db
-
-# Login to Cloudflare (required for D1)
-npx wrangler login
-```
-
-**Deployment:**
-```bash
-npm run deploy
-# Builds and deploys to Cloudflare Pages
-```
-
-## Architecture
-
-### Frontend-Backend Split
-
-- **Frontend**: Next.js static export (no server-side rendering) - all pages pre-rendered to HTML
-- **Backend**: Single Cloudflare Pages Function at `functions/api/game.js` - handles all database operations
-- **Database**: Cloudflare D1 (SQLite) - stores games, players, revealed clues
-- **Real-time Sync**: SWR library polls API endpoint for state updates (no WebSockets)
-
-### Key Architectural Patterns
-
-**Game State Management:**
-- All game state lives in D1 database (db-init.sql)
-- Frontend components fetch state via `lib/apiClient.js` wrappers
-- Host actions require PIN verification for security
-- IP-based player locking prevents multi-device cheating (configurable via `IP_PLAYER_LIMIT`)
-- Game type determines available phases and mechanics (murder mystery vs imposter)
-
-**Data Loading Flow:**
-1. Static game content (characters, clues, storyline) stored in `public/game_assets/{game_type}/`
-2. `lib/gameLoader.js` fetches JSON files client-side
-3. Database tracks only dynamic state (phase, revealed clues, character assignments)
-4. Game registry at `public/game_assets/_registry.json` lists all available games
-
-**Phase System:**
-
-*Murder Mystery Game (`momo_massacre`):*
-- `LOBBY`: Players join, host assigns characters
-- `INTRO`: Cinematic intro with background/audio
-- `TOAST`: Multi-step victim introduction sequence
-- `MURDER`: Announcement of the murder
-- `INTRODUCTIONS`: Carousel showing each character
-- `PLAYING`: Investigation phase with clue reveals
-- `FINISHED`: Game conclusion
-
-*Imposter Game (`imposter`):*
-- `LOBBY`: Players join (no character assignment needed)
-- `ASSIGN`: Host starts game, roles randomly assigned (imposters don't get secret word)
-- `PLAYING`: Discussion phase where players try to figure out the secret word and identify imposters
-- `VOTING`: Players vote for who they think is the imposter
-- `ELIMINATION`: Results revealed with step-by-step progression (votes → eliminations → status → winner)
-- `FINISHED`: Game over with winner announcement and confetti
-
-Host controls phase transitions via admin actions. The imposter game supports multiple voting rounds until win conditions are met.
-
-### Component Organization
-
-**Host Interface:**
-- `pages/host.js`: Main host dashboard
-- `components/common/HostSessionManager.js`: Game session orchestrator that routes to game-specific host components
-- `components/murdermystery/HostMomo.js`: Murder mystery host interface
-- `components/imposter/HostImposter.js`: Imposter game host interface with voting controls
-- `components/common/PhaseLobby.js`: Shared lobby component for both games
-- `components/murdermystery/HostSidebar.js`: Persistent sidebar with player list and controls
-
-**Player Interface:**
-- `pages/player/[id].js`: Dynamic route for each player
-- Murder Mystery: `components/murdermystery/PlayerTabRole.js`, `PlayerTabSecret.js`, `PlayerTabClues.js` - Tab-based character info
-- Imposter: `components/imposter/PlayerImposter.js` - Role reveal card and voting interface
-- `components/imposter/PlayerVoting.js`: Voting interface for imposter game
-
-**Shared Components:**
-- `components/common/PhaseRenderer.js`: Routes to correct phase component based on game state and type
-- `components/common/PhaseFinished.js`: Game over screen with restart capability (imposter)
-- `components/imposter/Scorecard.js`: Real-time eliminated players sidebar (hides secret word)
-- `lib/apiClient.js`: Centralized API client with error handling
-
-## Imposter Game Mechanics
-
-The imposter game is a social deduction game where players must identify imposters who don't know the secret word.
-
-**Game Setup:**
-- Host starts game from lobby
-- 25% of players randomly assigned as imposters (minimum 1)
-- Remaining players are "genuine" and receive the secret word
-- Secret word randomly selected from `words.json`
-
-**Voting & Elimination:**
-- Players vote for who they suspect is an imposter
-- Vote counts hidden during voting to prevent bias
-- Host finalizes voting to trigger elimination logic
-- Results displayed with horizontal bar chart showing top 5 vote recipients
-- Step-by-step reveal: votes → eliminations → game status → winner (if applicable)
-
-**Tie Handling:**
-- If multiple players receive the same highest vote count: **NO ONE is eliminated**
-- Round increments automatically, voting session resets
-- Players see tie warning banner on next voting screen
-- Game continues with fresh voting round
-
-**Win Conditions:**
-- **Genuine Players Win**: All imposters eliminated (imposters = 0)
-- **Imposters Win**: Imposters equal or outnumber genuine players (imposters ≥ genuine)
-- Game continues through multiple rounds until win condition met
-
-**Round Management:**
-- Each voting session has a round number tracked in database
-- Votes filtered by round number to isolate each session
-- Round auto-increments when:
-  - Tie detected → increment and return to VOTING
-  - Game continues after elimination → increment when transitioning ELIMINATION → PLAYING → VOTING
-
-**Secret Word Security:**
-- **CRITICAL**: Secret word must NEVER be revealed during gameplay
-- Scorecard shows only "Genuine" or "Imposter" (no word)
-- Elimination screen shows only "Genuine Player" (no word)
-- Word only visible to genuine players on their own role card
-- Imposters see "IMPOSTER" role but no word
-
-**Visual Features:**
-- Scorecard sidebar showing eliminated players throughout game (both host and player screens)
-- Confetti animation on winner announcement
-- Horizontal bar chart visualization for vote results
-- Role cards styled identically for imposters and genuine players (prevents screen-peeking)
-
-## Adding New Games
-
-Create folder structure in `public/game_assets/new_game_name/`:
-
-```
-new_game_name/
-├── manifest.json       # Game config with phase definitions (see momo_massacre/manifest.json)
-├── storyline.json      # Narrative text for each phase
-├── clues.json          # Array of clue objects with id, text, image
-├── characters/         # Character JSON files (1.json, 2.json, etc.)
-│   └── 1.json          # Each contains: id, name, role, description, secret, action, alibi, goal
-└── media/
-    ├── characters/     # Character portrait images
-    ├── scenes/         # Background images
-    └── audio/          # Optional audio files
-```
-
-Update `public/game_assets/_registry.json` to register the new game.
-
-Character JSON structure (public/game_assets/momo_massacre/characters/1.json:1-14):
-- `id`, `name`, `role`: Basic identity
-- `about`: Public backstory (shown to all during introductions)
-- `secret`: Private info (only visible to assigned player)
-- `action`: Special instructions for this character
-- `alibi`, `goal`, `tips`: Additional private information
-- `icon`, `image`: Display assets
-
-## Key Technical Details
-
-**API Actions (functions/api/game.js):**
-- `CREATE_SESSION`: Generate game ID and host PIN
-- `JOIN`: Add player to game (checks IP and name uniqueness)
-- `GET_STATE`: Fetch current game state (filtered by round for votes)
-- `CAST_VOTE`: Player submits vote during VOTING phase (imposter game)
-- `ADMIN_ACTION`: Host commands including:
-  - `SET_PHASE`: Change game phase (auto-increments round when ELIMINATION → PLAYING)
-  - `ASSIGN_CHARACTER`: Assign role to player (murder mystery)
-  - `REVEAL_CLUE`: Make clue visible to all players (murder mystery)
-  - `START_ROUND_IMPOSTER`: Assign roles and start imposter game
-  - `FINALIZE_VOTING`: Calculate elimination results, handle ties, check win conditions
-  - `INCREMENT_ROUND`: Manually increment voting round (usually automatic)
-  - `RESET`: Reset game (supports keepPlayers for imposter restart)
-  - `RESTART_IMPOSTER`: Keep players, assign new roles, pick new word
-  - `KICK`: Remove player from game
-
-**Database Schema (db-init.sql):**
-- `games`: Game sessions with phase tracking
-  - `id`: Game code (e.g., "ABC123")
-  - `game_type`: "momo_massacre" or "imposter"
-  - `phase`: Current phase
-  - `current_voting_round`: Voting round number (imposter game)
-  - `host_pin`: SHA-256 hashed PIN
-- `players`: Player roster with character assignments and IP tracking
-  - `character_id`: Role/character assignment (or "IMPOSTER" / "WORD:secretword" for imposter game)
-  - `is_alive`: Elimination status (imposter game)
-  - `avatar_url`: Player avatar (R2 storage)
-- `revealed_clues`: Many-to-many relationship tracking which clues are visible (murder mystery)
-- `votes`: Voting records (imposter game)
-  - `voter_id`: Player who cast vote
-  - `voted_for_id`: Player who was voted for
-  - `round_number`: Which voting round
-  - Filtered by round when retrieving game state
-
-**Environment Variables:**
-- `IP_PLAYER_LIMIT`: Set to "false" in dev to disable IP-based player locking (wrangler.toml:19)
-
-**Cloudflare Configuration (wrangler.toml):**
-- D1 binding name must be `murder_mystery_db` to match functions/api/game.js:273
-- Static output directory is `out` (Next.js export target)
-
-## Security Features
-
-**Cryptographic Security:**
-- All IDs use `crypto.randomUUID()` or `crypto.getRandomValues()`
-- PINs hashed with SHA-256 before database storage (functions/api/game.js:32-42)
-- PIN verification uses constant-time comparison via hash matching
-
-**Input Validation (functions/api/game.js):**
-- Names: 1-50 chars, alphanumeric + unicode, regex validated
-- Game IDs: 4-8 uppercase alphanumeric
-- PINs: Exactly 4 digits
-- Game types: Whitelist (`momo_massacre`, `imposter`)
-- Phases: Whitelist validation (includes VOTING, ELIMINATION, ASSIGN for imposter)
-- Player IDs: UUID format validation
-- Vote targets: Verified to be alive players in the same game
-- All endpoints validate before database operations
-
-**Rate Limiting (functions/api/game.js:146-216):**
-- In-memory rate limiter with automatic cleanup
-- Per-IP limits: CREATE_SESSION (5/min), JOIN (10/min), ADMIN_ACTION (30/min)
-- Returns 429 with retry-after header when exceeded
-
-**Database Security:**
-- All queries use prepared statements with bound parameters
-- Database operations wrapped in try-catch (functions/api/game.js:222-253)
-- Compound indexes for performance (schema.sql:37-43)
-- Automatic expiration: Games deleted after 24 hours
-- Cleanup cron: functions/api/cleanup.js
-
-**Session Management:**
-- Sensitive data (PINs, player IDs) use sessionStorage not localStorage
-- Sessions cleared on tab close
-- No long-term storage of credentials
-
-**Error Handling:**
-- React error boundaries (components/ErrorBoundary.js)
-- Exponential backoff on polling failures (pages/host.js:62-111, pages/player/[id].js:29-90)
-- User-friendly error messages, no stack traces in production
-
-**Security Headers (_headers file):**
-- X-Frame-Options, CSP, X-Content-Type-Options
-- Permissions-Policy restricts features
-- CORS configured per environment
-
-## Testing
+## Commands
 
 ```bash
-npm test              # Run all tests (30 tests)
-npm run test:watch    # Watch mode
-npm run test:coverage # Coverage report
+npm run dev            # http://localhost:5173 — SPA + Worker + Durable Objects (workerd)
+npm test               # vitest: mechanics + game server logic + redaction
+npm run smoke          # end-to-end over HTTP/WebSocket against a running server (default localhost:5173)
+npm run typecheck      # app (DOM) and worker tsconfigs separately
+npm run build          # dist/client (SPA) + dist/party_games (Worker)
+npm run deploy         # build + wrangler deploy (custom domain in wrangler.jsonc)
+npm run new-game <id> "Name"   # scaffold from src/games/_template and register
+npm run cf-typegen     # regenerate src/worker/worker-configuration.d.ts after editing wrangler.jsonc
 ```
 
-**Test Coverage:**
-- API validation, game loader, API client
-- 30 passing tests across 3 suites
+## Layout
 
-## Important Production Notes
+```
+src/
+  worker/                 Worker entry (HTTP API), GameRoom DO, crypto, media (R2 + Gemini)
+  platform/               game-agnostic, shared by Worker and app
+    sdk.ts                THE game contract: GameMeta, GameServer, GameContext, Viewer
+    protocol.ts           WebSocket messages + HTTP payload schemas
+    settings.ts           resolve/clamp settings declared in meta
+    mechanics/            voting, roles, timer, scoring, teams, phases, random (pure, tested)
+    client/               useRoom (WS + reconnect), session storage, api, GameClient types, events
+  ui/                     design system (ui.css tokens + components); games build on this
+  app/                    routes (Home, GameDetail, Join) and shells (HostShell, PlayerShell)
+  games/
+    catalog.ts            every GameMeta (homepage order)
+    registry.server.ts    gameId → server (Worker only)
+    registry.client.ts    gameId → lazy client (app only)
+    _template/            starter game used by the scaffolder
+    imposter/             meta.ts, server.ts, content/, client/
+    momo-massacre/        meta.ts, server.ts, content.ts, content/, client/
+    guess-the/            meta.ts, categories.ts (public), server.ts, content/guess-the-<category>.json (secret), client/
+public/games/<id>/        large media (images/audio)
+tests/                    helpers.ts (game harness), mechanics/, games/
+scripts/                  new-game.mjs, smoke.mjs
+docs/ADDING_A_GAME.md     how to build a new game
+```
 
-- **PIN Security**: PINs are SHA-256 hashed. Old plaintext PINs from pre-security databases won't work
-- **Rate Limiting**: In-memory storage, resets on deployment
-- **Game TTL**: Games auto-delete after 24 hours (configurable in functions/api/game.js)
-- **CORS**: Set `ALLOWED_ORIGIN` in wrangler.toml for production
-- **Cleanup**: Use `functions/api/cleanup.js` as cron endpoint for expired game cleanup
+## How a room works
 
-## Imposter Game Implementation Notes
+- `POST /api/rooms {gameId, settings}` creates a room code (4–5 chars, no ambiguous letters) and DO `idFromName(code)`. It returns a `hostToken` and a 4-digit `pin`.
+- `POST /api/rooms/:code/join {name, photo?}` returns a `playerToken`. `POST /api/rooms/:code/resume {pin}` returns a new host token for another device (8 bad PINs → 5 min lock).
+- `GET /api/rooms/:code/ws?token=` upgrades to a WebSocket. The DO stores the viewer in the socket attachment.
+- Client → server: `{t:'action', id, type, payload}`. `room:*` types are platform actions (start, kick, playAgain, backToLobby, updateSettings); all others go to the game's `actions`.
+- Server → client: a full `{t:'state', room, game}` snapshot after every change, built **per viewer** with `GameServer.view()`. Also `ack`/`error` per action id, `event` for ephemeral effects, `kicked`.
+- Handlers run on a `structuredClone` of state and are committed only if they don't throw.
+- `setup(ctx, previous)` runs on room creation, play-again, back-to-lobby and settings change; `previous` is the replaced state (for room-long memory such as used questions).
+- One alarm drives game timers (`ctx.timers`) and room expiry (`ROOM_TTL_HOURS` after last activity; storage and R2 `rooms/<code>/` are deleted).
+- Tokens live in the browser under `pg:host:<code>` / `pg:player:<code>` (session + local storage). Only SHA-256 hashes are stored server-side.
 
-**Critical Security Rules:**
-- **NEVER reveal the secret word** except on genuine players' own role cards
-- Scorecard, elimination screens, and all public displays must hide the word
-- Use "Genuine Player" or "Genuine" without showing the word
-- All player role cards (imposter and genuine) must look identical to prevent screen-peeking
+## Security rules (critical)
 
-**Voting System:**
-- Votes are stored with `round_number` to support multiple voting rounds
-- `getGameState` filters votes by `current_voting_round` from games table
-- Round increments automatically in two scenarios:
-  1. Tie detected during FINALIZE_VOTING → increment and return to VOTING
-  2. Phase transition ELIMINATION → PLAYING → round increments via SET_PHASE
-- Old votes from previous rounds are not deleted, just filtered out by round number
+- **`view()` is the only thing a client ever receives.** Never put secrets in fields shared with other viewers. Unit tests assert this for every game; keep them.
+- **Client code is public.** `client/` may import only public content. Secret content (characters, clues, words, solutions) must be imported only from `server.ts`/`content.ts`. Example: Momo's killer id lives in `content/solution.json`, not in `manifest.json` (which the client imports).
+- Imposter: the word goes only to genuine players' own `me.word`. The host screen never receives it, even at game end. Roles become public only for eliminated players (and everyone at `finished`). Votes show only who has voted, never for whom.
+- Guess The: answers live only in `content/*.json` (imported by `server.ts`). A question's answer reaches clients only in `reveal`, after the question closes. Guesses stay private to their owner until then, and scores change only at the reveal. Clue image file names must not contain the answer (they're public).
+- Momo: players get their own character's secret/alibi/goal/tips/killer flag only after the game starts. The host gets public character info plus the host guide. Private clue content reaches only its recipient. Don't expose `role`/`isOptional` in public character data, because they identify the killer.
+- After building, `grep` `dist/client` for secret strings when adding content.
 
-**Tie Handling Logic:**
-- Count players with max votes
-- If count > 1: **TIE** (no elimination, increment round, return to VOTING)
-- If count = 1: **ELIMINATION** (eliminate player, go to ELIMINATION phase)
-- If count = 0: Error condition (should not happen)
+## Game specifics
 
-**Win Condition Checks:**
-- Only checked after a successful elimination (not after ties)
-- **Genuine Win**: `impostersAlive === 0`
-- **Imposter Win**: `impostersAlive >= genuinePlayersAlive`
-- If neither condition met: Game continues with next round
+**Imposter** (`src/games/imposter/server.ts`): phases `reveal → discussion → voting → results → (discussion | finished)`. Imposter count comes from `countFromRatio(n, imposterPercent)`: at least 1, fewer than half. A tie keeps the phase at `voting`, increments `round` and opens a fresh ballot. Results reveal in steps (1 tally, 2 eliminated + role, 3 remaining counts, 4 winner); the host screen auto-advances steps 2→3→4. Win: genuine when no imposters are alive; imposters when `imposters >= genuine` alive. The discussion timer (setting) opens voting automatically.
 
-**Component State Management:**
-- PhaseElimination uses `revealStep` state for step-by-step reveal (1→2→3→4)
-- PlayerVoting checks `gameState.votes` filtered by current round to determine if player already voted
-- Confetti triggers on step 4 when `gameOver === true`
+**Guess The** (`src/games/guess-the/`): phases `guessing → reveal → (guessing | finished)`. Each category in `categories.ts` is a boolean setting `category:<id>`. A question closes when every participant has guessed or passed, when the answer timer ends, or when the host forces it. Matching is `matchesAnswer` (mechanics/answers.ts) against `answer` + `accept`. A correct answer scores 50, plus a speed bonus by time since the question opened (≤5s 50, ≤7.5s 35, ≤10s 25, ≤15s 15, then 0; `SPEED_TIERS`). The host can skip a question (it is never revealed and doesn't count). Questions come from a room-long shuffle bag: `seen` carries over via `setup(ctx, previous)`, so nothing repeats until the chosen categories are exhausted. Each question may list image `credits`; they are sent only with the reveal and shown on the TV then. Add levels with the **`create-guess-the-level`** skill (it finds free-licensed images online first, downloads them under opaque names and strips metadata).
 
-**Restart Functionality:**
-- RESTART_IMPOSTER keeps all players, clears votes, revives all players
-- Randomly assigns new roles (25% imposters)
-- Picks new random word from words.json
-- Resets to ASSIGN phase with `current_voting_round = 1`
+**Momo Massacre** (`src/games/momo-massacre/`): phases come from `content/manifest.json` (types: cinematic, toast, announcement, carousel, investigation, finale). Characters are cast in the lobby (`HostLobbyPanel`); auto-cast fills non-optional characters (victim, killer) first, in random seat order. The host drives `setPhase`/`setToastStep`/`setSuspectIndex`, so every screen stays in sync. `revealClue` adds to the evidence board. With `GEMINI_API_KEY` and R2 configured and the `aiPortraits` setting on, casting a player who uploaded a selfie generates a portrait via `ctx.runAsync`.
 
-**Dependencies:**
-- `canvas-confetti`: Winner celebration animation
-- Word list stored in `public/game_assets/imposter/words.json`
+## Config
+
+`wrangler.jsonc` vars: `ROOM_TTL_HOURS`, `MAX_PLAYERS_PER_ROOM`, `ONE_PLAYER_PER_DEVICE` (reuse the seat for the same IP), `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`. Secrets: `GEMINI_API_KEY` (`.dev.vars` locally, `wrangler secret put` in prod). Static security headers are in `public/_headers`; API headers are set in the Worker.
+
+## Adding a game
+
+Use the project skill **`new-party-game`** (`.claude/skills/new-party-game/`): it has the full workflow, hard rules and exact APIs. Human-facing version: `docs/ADDING_A_GAME.md`. In short: `npm run new-game <id>`, then edit `meta.ts`, `server.ts` (with `view()` redaction) and `client/`, and add tests to `tests/games/<id>.test.ts`.

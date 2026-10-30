@@ -5,7 +5,7 @@
     "minPlayers": 3,
     "maxPlayers": 13,
     "victimCharacterId": "1",
-    "thumbnail": "media/scenes/Game_Setting.png",
+    "thumbnail": "scenes/Game_Setting.png",
     "phases": [
         {
             "id": "LOBBY",
@@ -15,8 +15,8 @@
         {
             "id": "INTRO",
             "type": "cinematic",
-            "background": "media/scenes/Game_Setting.png",
-            "audio": "media/audio/game_intro.wav",
+            "background": "scenes/Game_Setting.png",
+            "audio": "audio/game_intro.wav",
             "textKey": "intro",
             "title": "The Setting",
             "next": "TOAST"
@@ -24,13 +24,13 @@
         {
             "id": "TOAST",
             "type": "toast",
-            "victimImage": "media/characters/Momo_King.png",
-            "toastImage": "media/scenes/Toast.png",
+            "victimImage": "characters/1.png",
+            "toastImage": "scenes/Toast.png",
             "steps": [
                 {
                     "id": "INTRO",
                     "title": "Meet The Momo King",
-                    "audio": "media/audio/momo_king_intro.wav",
+                    "audio": "audio/momo_king_intro.wav",
                     "textKey": "victimIntro",
                     "instruction": "Introduce the man of the hour!"
                 },
@@ -65,7 +65,7 @@
             "id": "PLAYING",
             "type": "investigation",
             "victimName": "The Momo King",
-            "victimImage": "media/characters/Momo_King.png",
+            "victimImage": "characters/1.png",
             "next": "FINISHED"
         },
         {

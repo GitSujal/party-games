@@ -1,0 +1,49 @@
+{
+    "questions": [
+        {
+            "id": "w1",
+            "answer": "Butterfly",
+            "accept": [],
+            "images": [
+                "word/w1-1.svg",
+                "word/w1-2.svg"
+            ]
+        },
+        {
+            "id": "w2",
+            "answer": "Rainbow",
+            "accept": [],
+            "images": [
+                "word/w2-1.svg",
+                "word/w2-2.svg"
+            ]
+        },
+        {
+            "id": "w3",
+            "answer": "Sunflower",
+            "accept": [],
+            "images": [
+                "word/w3-1.svg",
+                "word/w3-2.svg"
+            ]
+        },
+        {
+            "id": "w4",
+            "answer": "Keyboard",
+            "accept": [],
+            "images": [
+                "word/w4-1.svg",
+                "word/w4-2.svg"
+            ]
+        },
+        {
+            "id": "w5",
+            "answer": "Pancake",
+            "accept": [],
+            "images": [
+                "word/w5-1.svg",
+                "word/w5-2.svg"
+            ]
+        }
+    ]
+}

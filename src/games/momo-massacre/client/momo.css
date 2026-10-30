@@ -1,0 +1,175 @@
+/* Momo Massacre TV layouts. Uses ui.css tokens only. */
+
+.momo-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-size: cover;
+    background-position: center;
+}
+
+.momo-panel.pg-dark {
+    background-color: #111;
+}
+
+.momo-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    width: 100%;
+    max-width: 1100px;
+    padding: 72px 96px;
+}
+
+/* Carousel */
+.momo-carousel {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-rows: 1fr auto;
+}
+
+.momo-carousel__image {
+    background: #111;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    max-height: calc(100dvh - 64px - 73px);
+}
+
+.momo-carousel__copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 56px 72px;
+    overflow-y: auto;
+}
+
+.momo-carousel__nav {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-top: 1px solid var(--pg-border);
+}
+
+/* Investigation */
+.momo-investigation {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+}
+
+.momo-investigation__main {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 48px 56px;
+    min-width: 0;
+}
+
+.momo-investigation__side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 48px 40px;
+    border-left: 1px solid var(--pg-border);
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
+    position: sticky;
+    top: 64px;
+}
+
+.momo-suspects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 24px 20px;
+}
+
+.momo-suspect-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: var(--pg-text);
+    font-size: 15px;
+}
+
+.momo-suspect-card__image {
+    aspect-ratio: 4 / 5;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--pg-subtle);
+    display: grid;
+    place-items: center;
+    margin-bottom: 8px;
+    transition: transform 0.25s var(--pg-ease);
+}
+
+.momo-suspect-card:hover .momo-suspect-card__image {
+    transform: translateY(-3px);
+}
+
+.momo-evidence {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--pg-border);
+}
+
+.momo-evidence > li {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.momo-suspect {
+    max-width: 1000px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+
+.momo-suspect__image {
+    background: #111;
+    display: grid;
+    place-items: center;
+    min-height: 420px;
+}
+
+@media (max-width: 960px) {
+    .momo-copy,
+    .momo-carousel__copy {
+        padding: 40px 20px;
+    }
+
+    .momo-carousel,
+    .momo-investigation,
+    .momo-suspect {
+        grid-template-columns: 1fr;
+    }
+
+    .momo-carousel__image {
+        max-height: 50dvh;
+    }
+
+    .momo-investigation__main,
+    .momo-investigation__side {
+        padding: 32px 20px;
+    }
+
+    .momo-investigation__side {
+        border-left: 0;
+        border-top: 1px solid var(--pg-border);
+        position: static;
+        max-height: none;
+    }
+}

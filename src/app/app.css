@@ -1,0 +1,221 @@
+/* Platform pages (home, game page). Game screens use ui.css only. */
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 72px;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.site-logo {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-size: 14px;
+}
+
+.site-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-bottom: 104px;
+}
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+    gap: 48px;
+    align-items: end;
+    padding: 120px 0 104px;
+}
+
+.hero__title {
+    font-size: clamp(44px, 6vw, 76px);
+    line-height: 1.02;
+    margin: 0;
+}
+
+.hero__lede {
+    margin: 0;
+    max-width: 440px;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--pg-muted);
+}
+
+.hero__join {
+    width: 100%;
+    max-width: 420px;
+    justify-self: end;
+}
+
+.resume-link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--pg-muted);
+    border-bottom: 1px solid var(--pg-border-strong);
+    padding-bottom: 2px;
+}
+
+/* ---------- Game cards ---------- */
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 24px;
+}
+
+.game-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.game-card:hover {
+    color: inherit;
+}
+
+.game-card .game-tile {
+    transition: transform 0.3s var(--pg-ease);
+}
+
+.game-card:hover .game-tile {
+    transform: translateY(-3px);
+}
+
+.game-card__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.game-card__head h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.game-tile {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.game-tile img {
+    display: block;
+}
+
+/* ---------- How it works ---------- */
+
+.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 40px;
+}
+
+.steps li {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.steps h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.steps p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 0 40px;
+    border-top: 1px solid var(--pg-border);
+    font-size: 13px;
+    color: var(--pg-muted);
+}
+
+/* ---------- Game page ---------- */
+
+.detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 64px;
+    padding: 72px 0 120px;
+    align-items: flex-start;
+}
+
+.detail__main {
+    flex: 999 1 560px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.detail__host {
+    flex: 1 1 340px;
+    max-width: 400px;
+    padding: 28px;
+    position: sticky;
+    top: 24px;
+}
+
+@media (max-width: 860px) {
+    .hero {
+        padding: 64px 0 72px;
+    }
+
+    .hero__join {
+        justify-self: stretch;
+        max-width: none;
+    }
+
+    .site-nav > a:not(.pg-btn) {
+        display: none;
+    }
+
+    .detail {
+        padding: 40px 0 80px;
+        gap: 40px;
+    }
+
+    .detail__host {
+        position: static;
+        max-width: none;
+    }
+}

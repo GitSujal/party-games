@@ -1,0 +1,111 @@
+/* Guess The TV layout: the question on the left, standings and the next action on the right. */
+.guess-split {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+}
+
+.guess-split__main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+    padding: 48px 72px;
+    min-width: 0;
+}
+
+.guess-split__side {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 48px 40px;
+    border-left: 1px solid var(--pg-border);
+}
+
+/* The clue area fills the space left by the question and answer. Rows are sized by fitClues(). */
+.guess-clues {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Phones: the clues size themselves (see Clues), so the area doesn't stretch. */
+.guess-clues--compact {
+    flex: none;
+}
+
+.guess-clues__row {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    min-height: 0;
+}
+
+.guess-clues img,
+.guess-clues video {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    object-fit: contain;
+    background: var(--pg-surface);
+    border: 1px solid var(--pg-border);
+    user-select: none;
+}
+
+/* Before the box is measured: a simple grid of the clues' own shapes. */
+.guess-clues:not(:has(.guess-clues__row)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+}
+
+.guess-clues:not(:has(.guess-clues__row)) img,
+.guess-clues:not(:has(.guess-clues__row)) video {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+}
+
+.guess-standing {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--pg-border);
+    font-size: 17px;
+}
+
+.guess-standing__name {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.guess-standing__guess {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+    .guess-split {
+        grid-template-columns: 1fr;
+    }
+
+    .guess-split__main {
+        padding: 32px 20px;
+    }
+
+    .guess-split__side {
+        border-left: 0;
+        border-top: 1px solid var(--pg-border);
+        padding: 32px 20px;
+    }
+
+}

@@ -1,6 +1,6 @@
-# Cloudflare Pages Development Environment Variables
-# Copy this file to .dev.vars and fill in your actual API keys
-# .dev.vars is gitignored and will not be committed
+# Local secrets for `npm run dev`. Copy to .dev.vars (gitignored).
+# In production: npx wrangler secret put GEMINI_API_KEY
 
-# Get your Gemini API key from: https://aistudio.google.com/app/apikey
+# Optional. Enables AI character portraits in games that use player selfies.
+# https://aistudio.google.com/app/apikey
 GEMINI_API_KEY=your_gemini_api_key_here

@@ -1,0 +1,45 @@
+{
+    "questions": [
+        {
+            "id": "a5",
+            "answer": "Tom Holland",
+            "accept": [],
+            "images": [
+                "https://upload.wikimedia.org/wikipedia/en/f/f6/Tom_Tom_and_Jerry.png",
+                "actor/a5-2.jpg"
+            ],
+            "credits": [
+                "Image: MGM / Wikipedia (fair use)",
+                "Photo: Hameltion / Wikimedia Commons, CC BY-SA 4.0"
+            ]
+        },
+        {
+            "id": "a6",
+            "answer": "Mark Ruffalo",
+            "accept": [
+                "Ruffalo"
+            ],
+            "images": [
+                "actor/a6-1.jpg",
+                "actor/a6-2.jpg"
+            ],
+            "credits": [
+                "Image: Flickerd / Wikimedia Commons, CC BY-SA 4.0",
+                "Image: Jacek Halicki / Wikimedia Commons, CC BY-SA 4.0"
+            ]
+        },
+        {
+            "id": "a7",
+            "answer": "Tom Cruise",
+            "accept": [],
+            "images": [
+                "https://upload.wikimedia.org/wikipedia/en/f/f6/Tom_Tom_and_Jerry.png",
+                "actor/a7-2.jpg"
+            ],
+            "credits": [
+                "Image: MGM / Wikipedia (fair use)",
+                "Photo: Jakub Hałun / Wikimedia Commons, CC BY 4.0"
+            ]
+        }
+    ]
+}
