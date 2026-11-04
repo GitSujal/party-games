@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Player } from '../../../platform/sdk';
 import { fireConfetti, useGameEvent, useToast } from '../../../ui';
 import type { View } from '../server';
+import { fitClues, type Size } from './layout';
 
 export type { View };
 
@@ -25,37 +26,7 @@ const VIDEO = /\.(mp4|webm)$/i;
 const GAP = 12;
 const DEFAULT_RATIO = 4 / 3;
 
-type Size = { w: number; h: number };
-type Row = { index: number; size: Size }[];
-
-/**
- * Best justified layout for clues of the given shapes (width ÷ height) in a box.
- * Tries every way of splitting the clues into rows, scales each to fit the box, and keeps
- * the arrangement that uses the most screen area. Rows keep the clues in order.
- */
-export function fitClues(ratios: number[], boxW: number, boxH: number, gap: number): Row[] {
-    const n = ratios.length;
-    let best: { area: number; rows: Row[] } | null = null;
-    // Bit i set = start a new row after clue i. 2^(n-1) splits, at most 16 for five clues.
-    for (let mask = 0; mask < 1 << (n - 1); mask++) {
-        const groups: number[][] = [[]];
-        ratios.forEach((_, i) => {
-            groups[groups.length - 1].push(i);
-            if (i < n - 1 && mask & (1 << i)) groups.push([]);
-        });
-        // Natural row heights when each row exactly fills the box width.
-        const heights = groups.map(g => (boxW - gap * (g.length - 1)) / g.reduce((s, i) => s + ratios[i], 0));
-        const gaps = gap * (groups.length - 1);
-        const scale = Math.max(0.05, Math.min(1, (boxH - gaps) / heights.reduce((a, b) => a + b, 0)));
-        const rows: Row[] = groups.map((g, r) => {
-            const h = heights[r] * scale;
-            return g.map(i => ({ index: i, size: { w: h * ratios[i], h } }));
-        });
-        const area = rows.flat().reduce((s, c) => s + c.size.w * c.size.h, 0);
-        if (!best || area > best.area) best = { area, rows };
-    }
-    return best!.rows;
-}
+export { fitClues } from './layout';
 
 /** One clue filling the screen. Tap anywhere (or press Escape) to go back. */
 function Fullscreen({ src, onClose }: { src: string; onClose: () => void }) {
@@ -73,11 +44,13 @@ function Fullscreen({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 /** The 1–5 clues (pictures or short clips), each keeping its own shape and sized to the space. */
-export function Clues({ images, compact }: { images: string[]; compact?: boolean }) {
+export function Clues({ images, shapes, compact }: { images: string[]; shapes?: ([number, number] | null)[]; compact?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState<Size>({ w: 0, h: 0 });
-    // Natural shape of each clue, learned when it loads (clips report their video size).
-    const [ratioBy, setRatioBy] = useState<Record<string, number>>({});
+    // Natural size of each clue. The server sends it with the question (so the first paint is final);
+    // anything it didn't know (external URLs) is learned when the clue loads.
+    const [learned, setLearned] = useState<Record<string, [number, number]>>({});
+    const natural = (src: string, i: number) => shapes?.[i] ?? learned[src] ?? null;
     const gap = compact ? 8 : GAP;
     const [zoom, setZoom] = useState<string | null>(null);
 
@@ -92,17 +65,27 @@ export function Clues({ images, compact }: { images: string[]; compact?: boolean
         return () => observer.disconnect();
     }, [compact]);
 
-    const rows = useMemo(
-        () => (box.w && box.h ? fitClues(images.map(src => ratioBy[src] ?? DEFAULT_RATIO), box.w, box.h, gap) : null),
-        [images, ratioBy, box, gap]
-    );
+    const rows = useMemo(() => {
+        if (!box.w || !box.h) return null;
+        const sizes = images.map((src, i) => shapes?.[i] ?? learned[src] ?? null);
+        return fitClues(
+            sizes.map(sz => (sz ? sz[0] / sz[1] : DEFAULT_RATIO)),
+            box.w,
+            box.h,
+            gap,
+            // Vector clues scale freely; only pictures and clips have a pixel size to protect.
+            { naturalHeights: sizes.map((sz, i) => (sz && !/\.svg$/i.test(images[i]) ? sz[1] : null)), pixelRatio: window.devicePixelRatio || 1 }
+        );
+    }, [images, shapes, learned, box, gap]);
 
     const learn = (src: string, w: number, h: number) => {
         if (!w || !h) return;
-        setRatioBy(prev => (prev[src] === w / h ? prev : { ...prev, [src]: w / h }));
+        setLearned(prev => (prev[src]?.[0] === w && prev[src]?.[1] === h ? prev : { ...prev, [src]: [w, h] }));
     };
     const media = (src: string, i: number, size?: Size) => {
-        const style = size ? { width: size.w, height: size.h } : undefined;
+        const known = natural(src, i);
+        // aspect-ratio keeps the slot the right shape even before the file arrives.
+        const style = size ? { width: size.w, height: size.h } : known ? { aspectRatio: `${known[0]} / ${known[1]}` } : undefined;
         return VIDEO.test(src) ? (
             // Short action clips: silent, looping, inline (muted autoplay works on every phone).
             <video key={src} src={src} style={style} aria-label={`Clue ${i + 1}`} autoPlay muted loop playsInline preload="auto" disablePictureInPicture onClick={() => setZoom(src)}

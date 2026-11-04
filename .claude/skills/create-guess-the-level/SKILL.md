@@ -156,3 +156,7 @@ minified JS. If grep hits, open the match and confirm it isn't the content.
 Look at every new image (Read the file) and every video's frame sheet before reporting. Then tell the user how many
 levels were added per category, and list any that have a weak clue or a risky short answer.
 Deploy only when the user asks (`npm run deploy`).
+
+## Clue shapes
+
+`add-level.mjs` snaps every picture to 1:1, 4:3, 3:4 or 16:9 (crop if within 8%, otherwise pad), caps the long edge at 1024px and records each clue's size in `src/games/guess-the/dims.json` (the server sends it so the TV lays clues out before they load). After adding or replacing files by hand, run `node scripts/guess-the-media.mjs normalize --write` to snap them and rebuild `dims.json`.

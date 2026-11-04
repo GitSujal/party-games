@@ -139,8 +139,8 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
         return layout(
             <>
                 {head}
-                <Clues images={q.images} />
-                <div className="pg-stack pg-enter" style={{ ['--gap' as string]: '6px' }}>
+                <Clues images={q.images} shapes={q.shapes} />
+                <div className="pg-stack pg-enter guess-foot" style={{ ['--gap' as string]: '6px' }}>
                     <span className="pg-label-sm" style={{ fontSize: 16 }}>
                         The answer
                     </span>
@@ -174,20 +174,20 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
     return layout(
         <>
             {head}
-            <Clues images={q.images} />
-            <p className="pg-muted" style={{ fontSize: 20, margin: 0 }}>
+            <Clues images={q.images} shapes={q.shapes} />
+            <p className="pg-muted guess-foot" style={{ fontSize: 20, margin: 0 }}>
                 {answered} of {everyone} answered. Type your guess on your phone.
             </p>
         </>,
         <>
-            <ConfirmButton variant="ink" size="lg" block confirmLabel="Reveal now" onConfirm={() => act('reveal')}>
+            <Button variant="ink" size="lg" block loading={busy} onClick={() => act('reveal')}>
                 Reveal answer
-            </ConfirmButton>
+            </Button>
             <CategoriesButton game={game} send={send} />
             {game.canSkip && (
-                <ConfirmButton variant="ghost" confirmLabel="Skip it" onConfirm={() => act('skip')}>
+                <Button variant="ghost" disabled={busy} onClick={() => act('skip')}>
                     Skip question
-                </ConfirmButton>
+                </Button>
             )}
         </>
     );

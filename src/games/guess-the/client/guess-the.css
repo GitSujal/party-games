@@ -9,9 +9,16 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 32px;
-    padding: 48px 72px;
+    gap: 24px;
+    padding: 32px 56px;
     min-width: 0;
+}
+
+/* One fixed-height strip under the clues in both phases, so the clue area is the same size when the
+   answer appears and the pictures don't jump. */
+.guess-foot {
+    flex: none;
+    min-height: 132px;
 }
 
 .guess-split__side {
@@ -91,6 +98,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Phones: the answer box stays reachable above the keyboard while the clues scroll. */
+.guess-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-inline: -4px;
+    padding: 12px 4px calc(12px + env(safe-area-inset-bottom));
+    background: var(--pg-bg);
+    border-top: 1px solid var(--pg-border);
 }
 
 @media (max-width: 860px) {

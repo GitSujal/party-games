@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { GameError, defineAction, defineServer, type GameContext, type SettingValue, type Viewer } from '../../platform/sdk';
 import { addPoints, assertPhase, leaderboard, matchesAnswer, startCountdown, type Countdown, type Scores } from '../../platform/mechanics';
 import { CATEGORIES, categoryKey } from './categories';
+import dims from './dims.json';
 
 type Settings = { questions: number; answerSeconds: number } & Record<string, SettingValue>;
 type Ctx = GameContext<Settings>;
@@ -82,6 +83,9 @@ for (const [path, file] of Object.entries(files)) {
     }
 }
 
+/** [width, height] of each local clue (scripts/guess-the-media.mjs). Shapes are public; they let clients lay out before images load. */
+const DIMS = dims as unknown as Record<string, [number, number]>;
+const shapeOf = (src: string): [number, number] | null => DIMS[src] ?? null;
 const imageUrl = (src: string) => (/^(https?:)?\//.test(src) ? src : `/games/guess-the/${src}`);
 const categoryName = (id: string) => CATEGORIES.find(c => c.id === id)?.name ?? id;
 
@@ -195,7 +199,7 @@ function view(state: State, viewer: Viewer, { settings }: Ctx) {
         round: state.round,
         total: state.total,
         // The answer is never part of `question`; it only appears in `reveal`.
-        question: q ? { category: categoryName(q.category), prompt: `Guess the ${categoryName(q.category)}`, images: q.images.map(imageUrl) } : null,
+        question: q ? { category: categoryName(q.category), prompt: `Guess the ${categoryName(q.category)}`, images: q.images.map(imageUrl), shapes: q.images.map(shapeOf) } : null,
         countdown: state.countdown,
         participants: state.participants,
         /** Who has answered (ids only), during guessing. */

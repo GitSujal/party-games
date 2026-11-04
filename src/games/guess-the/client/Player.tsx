@@ -26,7 +26,7 @@ function GuessForm({ send }: { send: GameScreenProps<View>['send'] }) {
     const [text, setText] = useState('');
     return (
         <form
-            className="pg-stack"
+            className="pg-stack guess-dock"
             style={{ ['--gap' as string]: '10px' }}
             onSubmit={e => {
                 e.preventDefault();
@@ -101,7 +101,7 @@ export default function Player({ room, game, send }: GameScreenProps<View>) {
                         </h1>
                         {game.countdown && <Countdown countdown={game.countdown} lowAtMs={10_000} style={{ fontSize: 28 }} />}
                     </div>
-                    <Clues images={q.images} compact />
+                    <Clues images={q.images} shapes={q.shapes} compact />
                     {me.submitted ? (
                         <div className="pg-stack pg-rule" style={{ ['--gap' as string]: '6px', paddingTop: 16 }}>
                             <span className="pg-label-sm">{me.passed ? 'You passed' : 'Locked in'}</span>
