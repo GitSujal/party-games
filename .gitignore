@@ -7,8 +7,8 @@ node_modules/
 .dev.vars
 
 # Ignore build outputs
-.next/
-out/
+dist/
+.wrangler/deploy/
 
 # Ignore wrangler local state
 .wrangler/

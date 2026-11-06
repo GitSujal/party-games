@@ -1,0 +1,412 @@
+{
+    "categories": [
+        {
+            "id": "movie",
+            "name": "Movie"
+        },
+        {
+            "id": "actor",
+            "name": "Actor"
+        },
+        {
+            "id": "nepali-surnames",
+            "name": "Nepali Surnames"
+        }
+    ],
+    "levels": {
+        "movie": [
+            {
+                "id": "m5",
+                "answer": "The Dark Knight",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "movie/m5-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    }
+                ],
+                "credits": [],
+                "updatedAt": 0
+            },
+            {
+                "id": "m6",
+                "answer": "Spider-Man: Homecoming",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "movie/m6-1.webp",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "movie/m6-2.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    }
+                ],
+                "credits": [],
+                "updatedAt": 0
+            },
+            {
+                "id": "m7",
+                "answer": "Spider-Man: Far From Home",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "movie/m7-2.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "movie/m7-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    }
+                ],
+                "credits": [],
+                "updatedAt": 0
+            },
+            {
+                "id": "m8",
+                "answer": "WALL-E",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "movie/m8-1.jpg",
+                        "shape": [
+                            960,
+                            720
+                        ]
+                    },
+                    {
+                        "src": "movie/m8-2.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: Tomwsulcer / Wikimedia Commons (CC0)"
+                ],
+                "updatedAt": 0
+            }
+        ],
+        "actor": [
+            {
+                "id": "a5",
+                "answer": "Tom Holland",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "actor/a5-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "actor/a5-2.jpg",
+                        "shape": [
+                            768,
+                            1024
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: MGM / Wikipedia (fair use)",
+                    "Photo: Hameltion / Wikimedia Commons, CC BY-SA 4.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "a6",
+                "answer": "Mark Ruffalo",
+                "accept": [
+                    "Ruffalo"
+                ],
+                "clues": [
+                    {
+                        "src": "actor/a6-1.jpg",
+                        "shape": [
+                            768,
+                            1024
+                        ]
+                    },
+                    {
+                        "src": "actor/a6-2.jpg",
+                        "shape": [
+                            410,
+                            308
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: Flickerd / Wikimedia Commons, CC BY-SA 4.0",
+                    "Image: Jacek Halicki / Wikimedia Commons, CC BY-SA 4.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "a7",
+                "answer": "Tom Cruise",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "actor/a7-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "actor/a7-2.jpg",
+                        "shape": [
+                            960,
+                            722
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: MGM / Wikipedia (fair use)",
+                    "Photo: Jakub Hałun / Wikimedia Commons, CC BY 4.0"
+                ],
+                "updatedAt": 0
+            }
+        ],
+        "nepali-surnames": [
+            {
+                "id": "n1",
+                "answer": "Subedi",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n1-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n1-2.jpg",
+                        "shape": [
+                            960,
+                            720
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n1-3.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: Kurt Kaiser / Wikimedia Commons (CC0)"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n2",
+                "answer": "Timilsena",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n2-1.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n2-2.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n2-3.jpg",
+                        "shape": [
+                            960,
+                            722
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Photo: Nabin K. Sapkota / Wikimedia Commons, CC BY-SA 4.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n3",
+                "answer": "Tamrakar",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n3-1.jpg",
+                        "shape": [
+                            960,
+                            960
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n3-2.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n3-3.jpg",
+                        "shape": [
+                            960,
+                            540
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: United States Mint / Wikimedia Commons (Public domain)",
+                    "Photo: Petar Milošević / Wikimedia Commons, CC BY-SA 4.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n4",
+                "answer": "Ghimire",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n4-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n4-2.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n4-3.jpg",
+                        "shape": [
+                            960,
+                            720
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Image: JaredMcKenzie / Wikimedia Commons (CC0)"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n5",
+                "answer": "Kharel",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n5-1.svg",
+                        "shape": [
+                            800,
+                            600
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n5-2.jpg",
+                        "shape": [
+                            1024,
+                            574
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Photo: The Carlisle Kid / Wikimedia Commons, CC BY-SA 2.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n6",
+                "answer": "Sapkota",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n6-1.jpg",
+                        "shape": [
+                            960,
+                            722
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n6-2.jpg",
+                        "shape": [
+                            960,
+                            720
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Photo: Darius Bauzys / Wikimedia Commons, CC BY 3.0",
+                    "Photo: Chris Olszewski / Wikimedia Commons, CC BY-SA 4.0"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n7",
+                "answer": "Dhakal",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n7-1.jpg",
+                        "shape": [
+                            936,
+                            936
+                        ]
+                    }
+                ],
+                "credits": [
+                    "Photo: BSign / bsign-store.com"
+                ],
+                "updatedAt": 0
+            },
+            {
+                "id": "n8",
+                "answer": "Karki",
+                "accept": [],
+                "clues": [
+                    {
+                        "src": "nepali-surnames/n8-1.png",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    },
+                    {
+                        "src": "nepali-surnames/n8-2.webp",
+                        "shape": [
+                            512,
+                            512
+                        ]
+                    }
+                ],
+                "credits": [],
+                "updatedAt": 0
+            }
+        ]
+    }
+}

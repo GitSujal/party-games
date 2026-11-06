@@ -1,0 +1,39 @@
+/* Imposter TV layout: the moment on the left, standings and the next action on the right. */
+.imposter-split {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+}
+
+.imposter-split__main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 40px;
+    padding: 64px 96px;
+    min-width: 0;
+}
+
+.imposter-split__side {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 48px 40px;
+    border-left: 1px solid var(--pg-border);
+}
+
+@media (max-width: 860px) {
+    .imposter-split {
+        grid-template-columns: 1fr;
+    }
+
+    .imposter-split__main {
+        padding: 40px 20px;
+    }
+
+    .imposter-split__side {
+        border-left: 0;
+        border-top: 1px solid var(--pg-border);
+        padding: 32px 20px;
+    }
+}
