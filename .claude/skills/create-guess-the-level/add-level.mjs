@@ -16,25 +16,25 @@
  *                         --keyframe images pin its frames (centre-cropped to square first)
  *
  * Pictures are snapped to 1:1, 4:3, 3:4 or 16:9 (centre-cropped if within 8%, otherwise padded) with the long edge
- * capped at 1024px, and every clue's size is recorded in src/games/guess-the/dims.json.
- * Videos (and GIFs) become silent, metadata-free H.264 MP4s (≤1280px, faststart). A contact sheet of
+ * capped at 1024px. Videos (and GIFs) become silent, metadata-free H.264 MP4s (≤1280px, faststart). A contact sheet of
  * frames is written to the temp folder for review. JPEG/PNG text metadata is stripped.
- * Every clue ends up at public/games/guess-the/<category>/<id>-<n>.<ext>.
+ * The processed clues are uploaded to R2 under opaque names and the level is saved to KV through the Worker's admin
+ * API (scripts/guess-the-catalog.mjs: GUESS_API and ADMIN_TOKEN pick the target, localhost by default).
  *
- * Options: --video-seconds N (gen-video length, default 4) · --dry-run (fetch, generate and check, write nothing).
+ * Options: --video-seconds N (gen-video length, default 4) · --dry-run (fetch, generate and check, upload nothing).
  * Generated clues are also saved to the temp folder, so after a dry run you can pass those files instead of regenerating.
  * Env: IMAGE_API_URL (default http://localhost:8000), IMAGE_API_KEY.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { rebuildDims, snapBytes } from '../../../scripts/guess-the-media.mjs';
+import { api, probeSize, uploadAsset } from '../../../scripts/guess-the-catalog.mjs';
+import { snapBytes } from '../../../scripts/guess-the-media.mjs';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../..');
-const gameDir = join(root, 'src/games/guess-the');
 const UA = 'PartyGamesLevels/1.0 (https://partygames.datasparta.com)';
 const TWEMOJI = 'https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0';
 const TWEMOJI_CREDIT = 'Emoji: Twemoji (CC BY 4.0)';
@@ -78,12 +78,10 @@ if (!category || !answer) fail('Usage: add-level.mjs <category> "<answer>" [--ac
 if (!(videoSeconds >= 1 && videoSeconds <= 10)) fail('--video-seconds must be 1–10');
 if (keyframes.length > 4) fail('At most 4 --keyframe images');
 
-// ---- category ----
-const categoriesSrc = readFileSync(join(gameDir, 'categories.ts'), 'utf8');
-const known = [...categoriesSrc.matchAll(/id:\s*'([^']+)'/g)].map(m => m[1]);
-if (!known.includes(category)) fail(`Unknown category "${category}". Known: ${known.join(', ')}. Add new categories to categories.ts first.`);
-const file = join(gameDir, 'content', `guess-the-${category}.json`);
-const data = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { questions: [] };
+// ---- category and existing levels (from the live catalog) ----
+const known = (await api('GET', '/categories').catch(e => fail(e.message))).map(c => c.id);
+if (!known.includes(category)) fail(`Unknown category "${category}". Known: ${known.join(', ') || '(none)'}. Add one with: node scripts/guess-the-catalog.mjs category add "<name>"`);
+const data = { questions: await api('GET', `/categories/${category}/levels`).catch(e => fail(e.message)) };
 
 // ---- answer checks (same normalisation idea as mechanics/answers.ts) ----
 const norm = s => s.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/['’`]/g, '').replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/^(the|a|an) /, '');
@@ -94,12 +92,6 @@ if (clues.length < 1 || clues.length > 5) fail(`Give 1 to 5 clues (got ${clues.l
 
 const secrets = [answer, ...accept].map(a => norm(a).replace(/ /g, '')).filter(s => s.length > 3);
 const leaks = text => secrets.some(s => norm(text).replace(/ /g, '').includes(s));
-
-// ---- id: keep the file's prefix, next number ----
-const ids = data.questions.map(q => q.id);
-const prefix = ids[0]?.match(/^[a-z]+/)?.[0] ?? category[0];
-const next = Math.max(0, ...ids.map(id => Number(id.match(/\d+$/)?.[0] ?? 0))) + 1;
-const id = `${prefix}${next}`;
 
 // ---- helpers ----
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -204,7 +196,7 @@ function encodeVideo(bytes, ext, trim, n, generated = false) {
     const seconds = probeSeconds(out);
     if (seconds > 12) console.warn(`! Clue ${n} runs ${seconds.toFixed(1)} s. Trim it to the action (3–8 s) with @start-end.`);
     // Contact sheet: 8 evenly spaced frames, for checking the clip before it ships.
-    const sheet = join(work, `${id}-${n}-frames.png`);
+    const sheet = join(work, `${category}-${n}-frames.png`);
     ffmpeg(['-i', out, '-vf', `fps=${Math.max(8 / Math.max(seconds, 0.1), 0.01)},scale=320:-2,tile=4x2`, '-frames:v', '1', sheet], `Clue ${n} preview`);
     console.log(`  clue ${n}: ${seconds.toFixed(1)} s video · frames to review: ${sheet}`);
     return readFileSync(out);
@@ -286,7 +278,6 @@ async function generate(kind, prompt, n) {
 
 // ---- clues ----
 const files = [];
-const images = [];
 for (const [i, raw] of clues.entries()) {
     const n = i + 1;
     let clue = raw;
@@ -340,22 +331,29 @@ for (const [i, raw] of clues.entries()) {
         if (ext === '.svg' && !made && leaks(bytes.toString('utf8'))) fail(`Clue ${n} SVG contains the answer as text`);
         if (bytes.length > WARN_IMAGE) console.warn(`! Clue ${n} is ${Math.round(bytes.length / 1024)} KB. Prefer a ~1200px-wide version under 400 KB.`);
     }
-    const name = `${id}-${n}${ext}`;
-    files.push({ name, bytes });
-    images.push(`${category}/${name}`);
+    files.push({ ext, bytes });
 }
 
-const entry = { id, answer: answer.trim(), accept: accept.map(a => a.trim()).filter(Boolean), images };
-if (credits.length) entry.credits = credits.map(c => c.trim()).filter(Boolean);
-console.log(JSON.stringify(entry, null, 4));
+const entry = { answer: answer.trim(), accept: accept.map(a => a.trim()).filter(Boolean), credits: credits.map(c => c.trim()).filter(Boolean) };
+console.log(JSON.stringify({ ...entry, clues: files.map((f, i) => `clue ${i + 1}: ${f.ext} ${Math.round(f.bytes.length / 1024)} KB`) }, null, 4));
 if (dryRun) {
-    console.log(`(dry run: ${files.map(f => `${f.name} ${Math.round(f.bytes.length / 1024)} KB`).join(', ')}; temp files in ${work})`);
+    console.log(`(dry run: nothing uploaded; temp files in ${work})`);
     process.exit(0);
 }
 
-const outDir = join(root, 'public/games/guess-the', category);
-mkdirSync(outDir, { recursive: true });
-for (const f of files) writeFileSync(join(outDir, f.name), f.bytes);
-data.questions.push(entry);
-writeFileSync(file, JSON.stringify(data, null, 4) + '\n');
-console.log(`✓ Added ${category}/${id} (${images.length} clue${images.length === 1 ? '' : 's'}). Files in public/games/guess-the/${category}/`);
+// ---- upload to R2, then save the level to KV ----
+const uploaded = [];
+try {
+    for (const [i, f] of files.entries()) {
+        // The server measures pictures from their headers; clips and anything it can't read need a size from ffprobe.
+        const file = join(work, `upload-${i + 1}${f.ext}`);
+        writeFileSync(file, f.bytes);
+        uploaded.push(await uploadAsset(category, f.bytes, f.ext, { size: probeSize(file) }));
+    }
+    const level = await api('POST', `/categories/${category}/levels`, { ...entry, clues: uploaded });
+    console.log(`✓ Added ${category}/${level.id} (${uploaded.length} clue${uploaded.length === 1 ? '' : 's'}). Live in new games from the next start.`);
+} catch (e) {
+    // Don't leave half-uploaded files behind.
+    for (const c of uploaded) await api('DELETE', `/categories/${category}/assets/${c.src.split('/')[1]}?force=1`).catch(() => {});
+    fail(e.message);
+}

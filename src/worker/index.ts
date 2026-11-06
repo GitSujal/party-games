@@ -6,6 +6,7 @@ import { Hono, type Context } from 'hono';
 import { getGame } from '../games/registry.server';
 import { createRoomBody, joinBody, resumeBody, roomCode, type CreateRoomResponse } from '../platform/protocol';
 import { randomRoomCode, sha256Hex } from './crypto';
+import { adminApi, publicApi } from './guess-the-api';
 import { keyFromMediaPath } from './media';
 import type { RpcResult } from './room/GameRoom';
 
@@ -133,6 +134,10 @@ app.get('/api/media/*', async c => {
         },
     });
 });
+
+// Guess The content: public assets + categories, and the token-guarded admin API.
+app.route('/api/guess-the', publicApi);
+app.route('/api/admin/guess-the', adminApi);
 
 app.all('/api/*', c => c.json({ error: 'Not found' }, 404));
 

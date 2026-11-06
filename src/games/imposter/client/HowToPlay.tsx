@@ -14,7 +14,7 @@ export default function HowToPlay({ role }: { role: Role }) {
             />
             {role === 'host' && (
                 <p className="pg-help" style={{ margin: 0 }}>
-                    The big screen never shows the word. Use Change word if someone lets it slip.
+                    The big screen never shows the word. Use Change word if someone lets it slip, and Show category to give everyone a hint about the word.
                 </p>
             )}
         </div>

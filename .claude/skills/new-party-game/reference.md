@@ -1,4 +1,4 @@
-# Party Games: API reference and patterns
+# Party Games by Data Sparta: API reference and patterns
 
 Source of truth: `src/platform/sdk.ts`, `src/platform/mechanics/*`, `src/platform/client/types.ts`,
 `src/ui/index.ts`, `tests/helpers.ts`. If anything here disagrees with those files, the code wins.

@@ -1,5 +1,4 @@
 import { defineMeta } from '../../platform/sdk';
-import { CATEGORIES, categoryKey } from './categories';
 
 // Catalog card + configuration. Everything here is public.
 export default defineMeta({
@@ -7,7 +6,7 @@ export default defineMeta({
     name: 'Guess The',
     tagline: 'Read the picture clues and name it before anyone else.',
     description:
-        'Each question shows one to five picture clues: guess the movie, the actor or the Nepali surname. Type your answer on your phone. Correct answers score points, with a bonus for speed. The big screen reveals the answer once everyone is in.',
+        'Each question shows one to five picture clues: guess the movie, the actor or the Nepali surname (the host picks the categories). Type your answer on your phone. Correct answers score points, with a bonus for speed. The big screen reveals the answer once everyone is in.',
     players: { min: 1, max: 20 },
     duration: '10–20 min',
     tags: ['Quiz', 'Pictures', 'Quick'],
@@ -25,6 +24,5 @@ export default defineMeta({
             unit: 'seconds',
             help: 'The answer is revealed when it runs out. 0 turns the timer off.',
         },
-        ...CATEGORIES.map(c => ({ key: categoryKey(c.id), label: `Guess the ${c.name}`, type: 'boolean' as const, default: true })),
     ],
 });

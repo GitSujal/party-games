@@ -1,4 +1,4 @@
-# Party Games
+# Party Games by Data Sparta
 
 Game night, sorted. Put a game on the big screen, and everyone joins from their phone
 with a QR code. No app, no accounts.

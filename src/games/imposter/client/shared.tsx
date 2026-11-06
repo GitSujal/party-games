@@ -19,6 +19,7 @@ export function useImposterEvents(): void {
     useGameEvent('confetti', () => fireConfetti());
     useGameEvent('tie', () => toast("It's a tie. Nobody leaves; vote again."));
     useGameEvent('wordChanged', () => toast('New word. Check your card again.'));
+    useGameEvent('categoryShown', () => toast('The host showed the category.'));
 }
 
 /** Players who are out, with their (now public) role. Never shows the word. */
@@ -46,4 +47,14 @@ export function Eliminated({ game, players }: { game: View; players: Player[] })
 /** "1 imposter · 3 genuine" */
 export function remainingLine(r: { imposters: number; genuine: number }): string {
     return `${r.imposters} imposter${r.imposters === 1 ? '' : 's'} · ${r.genuine} genuine`;
+}
+
+/** The category hint, once the host has shown it. */
+export function CategoryTag({ game }: { game: View }) {
+    if (!game.category) return null;
+    return (
+        <span className="pg-sticker pg-sticker--marker" style={{ alignSelf: 'flex-start' }}>
+            Category: {game.category}
+        </span>
+    );
 }

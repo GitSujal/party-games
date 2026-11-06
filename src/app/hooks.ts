@@ -39,6 +39,6 @@ export function useDocumentTheme(theme: Theme | undefined): void {
 
 export function useTitle(title: string): void {
     useEffect(() => {
-        document.title = title ? `${title} · Party Games` : 'Party Games';
+        document.title = title ? `${title} · Party Games by Data Sparta` : 'Party Games by Data Sparta';
     }, [title]);
 }

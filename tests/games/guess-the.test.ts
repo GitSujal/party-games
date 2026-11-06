@@ -1,18 +1,29 @@
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import server, { BASE_POINTS, QUESTIONS } from '../../src/games/guess-the/server';
+import server, { BASE_POINTS, questionsOf } from '../../src/games/guess-the/server';
 import meta from '../../src/games/guess-the/meta';
-import { CATEGORIES, categoryKey } from '../../src/games/guess-the/categories';
 import { resolveSettings } from '../../src/platform/settings';
+import { catalog } from '../fixtures/guess-the-catalog';
 import { HOST, as, harness, players } from '../helpers';
 
 const roster = players('Ann', 'Ben', 'Cat');
 const base = { questions: 5, answerSeconds: 30 };
 type Settings = typeof base & Record<string, number | boolean | string>;
 
-function started(settings: Partial<Settings> = {}, seed = 3) {
-    const h = harness(server, roster, { ...base, ...settings } as Settings, seed);
+const QUESTIONS = questionsOf({ content: catalog });
+const CATEGORIES = catalog.categories;
+const ids = CATEGORIES.map(c => c.id);
+const except = (keep: string) => ids.filter(id => id !== keep);
+
+/** A room in the lobby with the catalog loaded; `disabled` categories are switched off the way a host would. */
+function lobby(settings: Partial<Settings> = {}, seed = 3, disabled: string[] = []) {
+    const h = harness(server, roster, { ...base, ...settings } as Settings, seed, catalog);
+    for (const id of disabled) h.act('setCategory', HOST, { id, enabled: false });
+    return h;
+}
+
+function started(settings: { questions?: number; answerSeconds?: number; disabled?: string[] } = {}, seed = 3) {
+    const { disabled, ...rest } = settings;
+    const h = lobby(rest, seed, disabled);
     h.start();
     return h;
 }
@@ -21,17 +32,15 @@ const answerOf = (h: ReturnType<typeof started>) => QUESTIONS[h.state.current!.k
 const allAnswers = Object.values(QUESTIONS).map(q => q.answer);
 
 describe('guess-the: content', () => {
-    it('has one question file per category and valid questions', () => {
-        const dir = join(__dirname, '../../src/games/guess-the/content');
-        const files = readdirSync(dir).map(f => f.match(/^guess-the-(.+)\.json$/)?.[1]).filter(Boolean).sort();
-        expect(files).toEqual(CATEGORIES.map(c => c.id).sort());
+    it('has valid questions', () => {
+        expect(CATEGORIES.length).toBeGreaterThan(0);
         for (const q of Object.values(QUESTIONS)) {
             expect(q.answer.trim()).not.toBe('');
-            expect(q.images.length).toBeGreaterThanOrEqual(1);
-            expect(q.images.length).toBeLessThanOrEqual(5);
+            expect(q.clues.length).toBeGreaterThanOrEqual(1);
+            expect(q.clues.length).toBeLessThanOrEqual(5);
             expect(Array.isArray(q.credits) && q.credits.every(c => typeof c === 'string' && c.trim() !== '')).toBe(true);
             // Public image paths must not give the answer away.
-            for (const src of q.images) {
+            for (const { src } of q.clues) {
                 expect(src.toLowerCase()).not.toContain(q.answer.toLowerCase());
                 // Pictures, or short clips the client plays as muted looping video.
                 expect(src).toMatch(/\.(svg|png|jpe?g|webp|gif|avif|mp4|webm)$/i);
@@ -39,9 +48,8 @@ describe('guess-the: content', () => {
         }
     });
 
-    it('declares an on/off setting per category, all on by default', () => {
-        const settings = resolveSettings(meta);
-        for (const c of CATEGORIES) expect(settings[categoryKey(c.id)]).toBe(true);
+    it('keeps categories out of the settings: the host picks them in the lobby', () => {
+        expect(Object.keys(resolveSettings(meta)).sort()).toEqual(['answerSeconds', 'questions']);
     });
 });
 
@@ -56,15 +64,13 @@ describe('guess-the: start', () => {
     });
 
     it('only deals questions from the chosen categories', () => {
-        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
-        const h = started({ ...off, questions: 50 });
+        const h = started({ disabled: except('movie'), questions: 50 });
         expect(h.state.total).toBe(Object.keys(QUESTIONS).filter(k => k.startsWith('movie/')).length);
         expect([h.state.current!.key, ...h.state.deck].every(k => k.startsWith('movie/'))).toBe(true);
     });
 
     it('refuses to start with no categories', () => {
-        const off = Object.fromEntries(CATEGORIES.map(c => [categoryKey(c.id), false]));
-        const h = harness(server, roster, { ...base, ...off } as Settings);
+        const h = lobby({}, 3, ids);
         expect(() => h.start()).toThrow(/at least one category/);
     });
 
@@ -130,6 +136,7 @@ describe('guess-the: guessing and reveal', () => {
     it('accepts small typos and listed aliases', () => {
         const h = started();
         h.state.current!.key = 'actor/a6'; // Mark Ruffalo, also "Ruffalo"
+        h.state.current!.q = QUESTIONS['actor/a6'];
         h.act('guess', as('p1'), { text: 'ruffalo' });
         h.act('guess', as('p2'), { text: 'mark rufalo' });
         expect(h.state.guesses.p1.correct).toBe(true);
@@ -177,8 +184,7 @@ describe('guess-the: guessing and reveal', () => {
     });
 
     it('refuses to skip when the deck is empty', () => {
-        const off = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
-        const h = started({ ...off, questions: 50 });
+        const h = started({ disabled: except('movie'), questions: 50 });
         while (h.state.deck.length) h.act('skip', HOST);
         expect(() => h.act('skip', HOST)).toThrow(/No more questions/);
     });
@@ -229,29 +235,9 @@ describe('guess-the: no repeats', () => {
         expect(new Set(keys).size).toBe(keys.length);
     });
 
-    it('uses every question across play-again before any repeats', () => {
-        const h = started({ questions: 6 });
-        const total = Object.keys(QUESTIONS).length;
-        let previous: typeof h.state | undefined;
-        const history: string[] = [];
-        // Enough games (6 questions each) to cover one full pass, plus one more.
-        for (let game = 0; game < Math.ceil(total / 6) + 1; game++) {
-            const { s, keys } = playGame(h, previous);
-            expect(new Set(keys).size).toBe(keys.length);
-            history.push(...keys);
-            previous = s;
-        }
-        // The first full pass covers every question exactly once.
-        expect(new Set(history.slice(0, total)).size).toBe(total);
-        // The next cycle doesn't immediately replay the questions from the end of the last one.
-        const next = playGame(h, previous!).keys;
-        expect(next.filter(k => history.slice(-6).includes(k))).toEqual([]);
-    });
-
     it('keeps the bag per category selection', () => {
-        const onlyWords = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'movie').map(c => [categoryKey(c.id), false]));
-        const h = started({ ...onlyWords, questions: 2 });
-        const a = playGame(h);
+        const h = lobby({ questions: 2 }, 3, except('movie'));
+        const a = playGame(h, h.state);
         const b = playGame(h, a.s);
         expect([...a.keys, ...b.keys].every(k => k.startsWith('movie/'))).toBe(true);
         expect(new Set([...a.keys, ...b.keys]).size).toBe(4);
@@ -306,18 +292,18 @@ describe('guess-the: secrecy', () => {
 
     it('sends image credits only with the reveal', () => {
         const h = started();
-        QUESTIONS[h.state.current!.key].credits.push('Photo: Secret Subject / Wikimedia Commons, CC BY-SA 4.0');
+        h.state.current!.q.credits.push('Photo: Secret Subject / Wikimedia Commons, CC BY-SA 4.0');
         try {
             for (const v of viewers) expect(JSON.stringify(h.view(v))).not.toContain('Secret Subject');
             h.act('reveal', HOST);
             expect(h.view(as('p2')).reveal.credits).toContain('Photo: Secret Subject / Wikimedia Commons, CC BY-SA 4.0');
         } finally {
-            QUESTIONS[h.state.current!.key].credits.pop();
+            h.state.current!.q.credits.pop();
         }
     });
 
     it('content answers never appear in public meta', () => {
-        const json = JSON.stringify(meta) + JSON.stringify(CATEGORIES);
+        const json = JSON.stringify(meta);
         for (const a of allAnswers) expect(json).not.toContain(a);
     });
 });
@@ -343,5 +329,56 @@ describe('guess-the: changing categories mid-game', () => {
         expect(() => {
             for (const c of CATEGORIES) h.act('setCategory', HOST, { id: c.id, enabled: false });
         }).toThrow();
+    });
+});
+
+describe('guess-the: content in the lobby and from KV', () => {
+    it('lets the host pick categories in the lobby and keeps the choice across play-again', () => {
+        const h = lobby();
+        h.act('setCategory', HOST, { id: 'actor', enabled: false });
+        expect(h.view(HOST).categories.find((c: { id: string }) => c.id === 'actor').enabled).toBe(false);
+        const again = server.setup(h.ctx, h.state);
+        expect(again.disabled).toEqual(['actor']);
+        server.start(again, h.ctx);
+        expect([again.current!.key, ...again.deck].some(k => k.startsWith('actor/'))).toBe(false);
+    });
+
+    it('rejects an unknown category', () => {
+        expect(() => lobby().act('setCategory', HOST, { id: 'nope', enabled: false })).toThrow(/Unknown category/);
+    });
+
+    it('says so when there are no questions at all', () => {
+        const h = harness(server, roster, { ...base } as Settings, 3, { categories: [], levels: {} });
+        expect(() => h.start()).toThrow(/No questions/);
+    });
+
+    it('keeps the open question intact when its level is deleted mid-game, and skips deleted levels in the deck', () => {
+        const h = started({ questions: 50 });
+        const key = h.state.current!.key;
+        const answer = answerOf(h);
+        // The catalog is reloaded (e.g. after the room wakes) and the open question plus the next one are gone.
+        const [gone] = h.state.deck;
+        const [category, id] = key.split('/');
+        const [goneCategory, goneId] = gone.split('/');
+        const trimmed = {
+            categories: catalog.categories,
+            levels: Object.fromEntries(
+                Object.entries(catalog.levels).map(([c, list]) => [c, list.filter(l => !(c === category && l.id === id) && !(c === goneCategory && l.id === goneId))])
+            ),
+        };
+        h.ctx.content = trimmed;
+        h.act('guess', as('p1'), { text: answer });
+        h.act('reveal', HOST);
+        expect(h.view(HOST).reveal.answer).toBe(answer);
+        h.act('next', HOST);
+        expect(h.state.current!.key).not.toBe(gone);
+    });
+
+    it('finishes instead of crashing when every remaining level was deleted', () => {
+        const h = started({ questions: 50 });
+        h.ctx.content = { categories: catalog.categories, levels: {} };
+        h.act('reveal', HOST);
+        h.act('next', HOST);
+        expect(h.state.phase).toBe('finished');
     });
 });

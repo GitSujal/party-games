@@ -164,3 +164,71 @@ describe('imposter: flow', () => {
         expect(winnerOf(draft)).toBe('genuine');
     });
 });
+
+describe('imposter: word categories', () => {
+    const categories = (h: ReturnType<typeof started>['h']) => h.view(HOST).categories as { id: string; enabled: boolean; words: number }[];
+
+    it('draws the word only from enabled categories, in the lobby or later', () => {
+        const h = harness(server, roster, settings, 3);
+        for (const c of categories(h)) if (c.id !== 'animals') h.act('setCategory', HOST, { id: c.id, enabled: false });
+        h.start();
+        expect(h.state.category).toBe('animals');
+        for (let i = 0; i < 6; i++) {
+            h.act('changeWord', HOST);
+            expect(h.state.category).toBe('animals');
+        }
+    });
+
+    it('refuses to start, or leave, with no category on', () => {
+        const h = harness(server, roster, settings, 3);
+        const ids = categories(h).map(c => c.id);
+        for (const id of ids.slice(1)) h.act('setCategory', HOST, { id, enabled: false });
+        expect(() => h.act('setCategory', HOST, { id: ids[0], enabled: false })).toThrow(/at least one/);
+        expect(() => h.act('setCategory', HOST, { id: 'nope', enabled: false })).toThrow(/Unknown/);
+    });
+
+    it('keeps the choice across play-again', () => {
+        const h = harness(server, roster, settings, 3);
+        h.act('setCategory', HOST, { id: 'jobs', enabled: false });
+        expect(server.setup(h.ctx, h.state).disabled).toEqual(['jobs']);
+    });
+
+    it('keeps the category hidden until the host shows it, then shows it to everyone, and can hide it again', () => {
+        const { h, imposters, genuine } = started();
+        const viewers = [HOST, as(imposters[0]), as(genuine[0])];
+        for (const v of viewers) expect(h.view(v).category).toBeNull();
+
+        h.act('showCategory', HOST, { visible: true });
+        const name = h.view(HOST).categories.find((c: { id: string }) => c.id === h.state.category).name;
+        for (const v of viewers) expect(h.view(v).category).toBe(name);
+        expect(h.events.some(e => e.type === 'categoryShown')).toBe(true);
+
+        // The hint is the category name only, never the word.
+        for (const v of viewers.slice(0, 2)) expect(JSON.stringify(h.view(v))).not.toContain(h.state.word!);
+
+        h.act('showCategory', HOST, { visible: false });
+        expect(h.view(HOST).category).toBeNull();
+    });
+
+    it('can show the category in every phase of a game, and only the host can', () => {
+        const { h, genuine } = started();
+        expect(() => h.act('showCategory', as(genuine[0]), { visible: true })).toThrow();
+        h.act('beginDiscussion', HOST);
+        h.act('showCategory', HOST, { visible: true });
+        h.act('startVoting', HOST);
+        h.act('showCategory', HOST, { visible: false });
+        h.act('showCategory', HOST, { visible: true });
+        expect(h.view(HOST).category).toBeTruthy();
+    });
+
+    it('cannot show a category before a game has started', () => {
+        const h = harness(server, roster, settings, 3);
+        expect(() => h.act('showCategory', HOST, { visible: true })).toThrow(/no word yet/);
+    });
+
+    it('has valid word data', () => {
+        const h = harness(server, roster, settings, 3);
+        expect(categories(h).length).toBeGreaterThan(1);
+        for (const c of categories(h)) expect(c.words).toBeGreaterThan(0);
+    });
+});

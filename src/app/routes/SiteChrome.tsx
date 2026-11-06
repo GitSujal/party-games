@@ -7,6 +7,9 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
         <header className="site-header">
             <Link to="/" className="site-logo">
                 Party Games
+                <span className="pg-sticker pg-sticker--marker" style={{ ['--r' as string]: '-4deg' }}>
+                    by Data Sparta
+                </span>
             </Link>
             <nav className="site-nav">{children}</nav>
         </header>

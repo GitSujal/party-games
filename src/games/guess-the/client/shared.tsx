@@ -23,7 +23,8 @@ export function useGuessEvents(): void {
 }
 
 const VIDEO = /\.(mp4|webm)$/i;
-const GAP = 12;
+const GAP = 22;
+const POSTIT_TILT = [-2.2, 1.6, -1, 2.4, -1.7];
 const DEFAULT_RATIO = 4 / 3;
 
 export { fitClues } from './layout';
@@ -51,7 +52,7 @@ export function Clues({ images, shapes, compact }: { images: string[]; shapes?: 
     // anything it didn't know (external URLs) is learned when the clue loads.
     const [learned, setLearned] = useState<Record<string, [number, number]>>({});
     const natural = (src: string, i: number) => shapes?.[i] ?? learned[src] ?? null;
-    const gap = compact ? 8 : GAP;
+    const gap = compact ? 14 : GAP;
     const [zoom, setZoom] = useState<string | null>(null);
 
     useEffect(() => {
@@ -82,17 +83,26 @@ export function Clues({ images, shapes, compact }: { images: string[]; shapes?: 
         if (!w || !h) return;
         setLearned(prev => (prev[src]?.[0] === w && prev[src]?.[1] === h ? prev : { ...prev, [src]: [w, h] }));
     };
+    // Each clue is a post-it note taped to the wall: a little tilt, alternating paper colours, a strip of tape.
     const media = (src: string, i: number, size?: Size) => {
         const known = natural(src, i);
-        // aspect-ratio keeps the slot the right shape even before the file arrives.
-        const style = size ? { width: size.w, height: size.h } : known ? { aspectRatio: `${known[0]} / ${known[1]}` } : undefined;
-        return VIDEO.test(src) ? (
-            // Short action clips: silent, looping, inline (muted autoplay works on every phone).
-            <video key={src} src={src} style={style} aria-label={`Clue ${i + 1}`} autoPlay muted loop playsInline preload="auto" disablePictureInPicture onClick={() => setZoom(src)}
-                onLoadedMetadata={e => learn(src, e.currentTarget.videoWidth, e.currentTarget.videoHeight)} />
-        ) : (
-            <img key={src} src={src} style={style} alt={`Clue ${i + 1}`} draggable={false} onClick={() => setZoom(src)}
-                onLoad={e => learn(src, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)} />
+        const style = {
+            ...(size ? { width: size.w, height: size.h } : known ? { aspectRatio: `${known[0] + 24} / ${known[1] + 26}` } : {}),
+            ['--r' as string]: `${POSTIT_TILT[i % POSTIT_TILT.length]}deg`,
+            ['--tape-r' as string]: `${-POSTIT_TILT[i % POSTIT_TILT.length] * 1.6}deg`,
+            ['--i' as string]: i,
+        };
+        return (
+            <figure key={src} className={`postit postit--${i % 2 ? 'blue' : 'yellow'}${size ? '' : ' postit--pending'}`} style={style} onClick={() => setZoom(src)}>
+                <span className={`pg-tape${i % 2 ? '' : ' pg-tape--cyan'}`} aria-hidden />
+                {VIDEO.test(src) ? (
+                    // Short action clips: silent, looping, inline (muted autoplay works on every phone).
+                    <video src={src} aria-label={`Clue ${i + 1}`} autoPlay muted loop playsInline preload="auto" disablePictureInPicture
+                        onLoadedMetadata={e => learn(src, e.currentTarget.videoWidth, e.currentTarget.videoHeight)} />
+                ) : (
+                    <img src={src} alt={`Clue ${i + 1}`} draggable={false} onLoad={e => learn(src, e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)} />
+                )}
+            </figure>
         );
     };
 

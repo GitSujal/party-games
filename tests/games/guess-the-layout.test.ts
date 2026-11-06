@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_UPSCALE, fitClues } from '../../src/games/guess-the/client/layout';
-import { QUESTIONS } from '../../src/games/guess-the/server';
-import dims from '../../src/games/guess-the/dims.json';
+import { questionsOf } from '../../src/games/guess-the/server';
+import { catalog } from '../fixtures/guess-the-catalog';
 import { SHAPES, nearestShape, planSnap } from '../../scripts/guess-the-media.mjs';
 
 const area = (rows: ReturnType<typeof fitClues>) => rows.flat().reduce((s, c) => s + c.size.w * c.size.h, 0);
@@ -52,15 +52,14 @@ describe('guess-the: clue media', () => {
     });
 
     it('records the size of every local clue, and every local clue is on a canonical shape', () => {
-        for (const q of Object.values(QUESTIONS)) {
-            for (const src of q.images.filter(s => !/^(https?:)?\//.test(s))) {
-                const d = (dims as Record<string, number[]>)[src];
-                expect(d, `${src} missing from dims.json (run node scripts/guess-the-media.mjs dims)`).toBeTruthy();
+        for (const q of Object.values(questionsOf({ content: catalog }))) {
+            for (const { src, shape: d } of q.clues.filter(c => !/^https?:/.test(c.src))) {
+                expect(d, `${src} has no shape (run node scripts/guess-the-media.mjs shapes)`).toBeTruthy();
                 if (/\.(svg|mp4|webm)$/i.test(src)) continue;
                 // Pictures are snapped within a pixel of rounding.
-                const { off } = nearestShape(d[0], d[1]);
-                expect(off, `${src} is ${d[0]}x${d[1]}; run node scripts/guess-the-media.mjs normalize --write`).toBeLessThan(1.02);
-                expect(Math.max(...d)).toBeLessThanOrEqual(1024);
+                const { off } = nearestShape(d![0], d![1]);
+                expect(off, `${src} is ${d![0]}x${d![1]}; run node scripts/guess-the-media.mjs normalize --write`).toBeLessThan(1.02);
+                expect(Math.max(...d!)).toBeLessThanOrEqual(1024);
             }
         }
         expect(SHAPES).toHaveLength(4);

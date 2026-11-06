@@ -4,7 +4,7 @@ This file guides Claude Code (claude.ai/code) when working in this repository.
 
 ## Overview
 
-**Party Games** (partygames.datasparta.com) is a platform for phone-controlled party games.
+**Party Games by Data Sparta** (partygames.datasparta.com) is a platform for phone-controlled party games.
 A host opens a game on a big screen, and players join by scanning a QR code. Every game
 shares the same infrastructure: rooms, realtime sync, auth, lobby, mechanics and UI kit.
 A game itself is a self-contained folder in `src/games/<id>/`.
@@ -28,7 +28,7 @@ npm test               # vitest: mechanics + game server logic + redaction
 npm run smoke          # end-to-end over HTTP/WebSocket against a running server (default localhost:5173)
 npm run typecheck      # app (DOM) and worker tsconfigs separately
 npm run build          # dist/client (SPA) + dist/party_games (Worker)
-npm run deploy         # build + wrangler deploy (custom domain in wrangler.jsonc)
+npm run deploy         # build + wrangler deploy + upload ADMIN_TOKEN + seed Guess The if its catalog is empty (needs GUESS_API and ADMIN_TOKEN in .env)
 npm run new-game <id> "Name"   # scaffold from src/games/_template and register
 npm run cf-typegen     # regenerate src/worker/worker-configuration.d.ts after editing wrangler.jsonc
 ```
@@ -53,10 +53,11 @@ src/
     _template/            starter game used by the scaffolder
     imposter/             meta.ts, server.ts, content/, client/
     momo-massacre/        meta.ts, server.ts, content.ts, content/, client/
-    guess-the/            meta.ts, categories.ts (public), server.ts, content/guess-the-<category>.json (secret), client/
+    guess-the/            meta.ts, server.ts, catalog/ (types + KV/R2 store), client/   (content lives in KV/R2, not here)
 public/games/<id>/        large media (images/audio)
+seed/guess-the/           catalog.json + assets/: the starting content, loaded with `guess-the-catalog.mjs seed`
 tests/                    helpers.ts (game harness), mechanics/, games/
-scripts/                  new-game.mjs, smoke.mjs
+scripts/                  new-game.mjs, smoke.mjs, guess-the-catalog.mjs (content CLI), guess-the-media.mjs
 docs/ADDING_A_GAME.md     how to build a new game
 ```
 
@@ -77,7 +78,7 @@ docs/ADDING_A_GAME.md     how to build a new game
 - **`view()` is the only thing a client ever receives.** Never put secrets in fields shared with other viewers. Unit tests assert this for every game; keep them.
 - **Client code is public.** `client/` may import only public content. Secret content (characters, clues, words, solutions) must be imported only from `server.ts`/`content.ts`. Example: Momo's killer id lives in `content/solution.json`, not in `manifest.json` (which the client imports).
 - Imposter: the word goes only to genuine players' own `me.word`. The host screen never receives it, even at game end. Roles become public only for eliminated players (and everyone at `finished`). Votes show only who has voted, never for whom.
-- Guess The: answers live only in `content/*.json` (imported by `server.ts`). A question's answer reaches clients only in `reveal`, after the question closes. Guesses stay private to their owner until then, and scores change only at the reveal. Clue image file names must not contain the answer (they're public).
+- Guess The: answers live only in KV (`gt:levels:<category>`), read by the room's Durable Object. The admin API (`/api/admin/guess-the`) exposes them and needs `ADMIN_TOKEN`. A question's answer reaches clients only in `reveal`, after the question closes. Guesses stay private to their owner until then, and scores change only at the reveal. Clue image file names must not contain the answer (they're public).
 - Momo: players get their own character's secret/alibi/goal/tips/killer flag only after the game starts. The host gets public character info plus the host guide. Private clue content reaches only its recipient. Don't expose `role`/`isOptional` in public character data, because they identify the killer.
 - After building, `grep` `dist/client` for secret strings when adding content.
 
@@ -85,7 +86,7 @@ docs/ADDING_A_GAME.md     how to build a new game
 
 **Imposter** (`src/games/imposter/server.ts`): phases `reveal → discussion → voting → results → (discussion | finished)`. Imposter count comes from `countFromRatio(n, imposterPercent)`: at least 1, fewer than half. A tie keeps the phase at `voting`, increments `round` and opens a fresh ballot. Results reveal in steps (1 tally, 2 eliminated + role, 3 remaining counts, 4 winner); the host screen auto-advances steps 2→3→4. Win: genuine when no imposters are alive; imposters when `imposters >= genuine` alive. The discussion timer (setting) opens voting automatically.
 
-**Guess The** (`src/games/guess-the/`): phases `guessing → reveal → (guessing | finished)`. Each category in `categories.ts` is a boolean setting `category:<id>`. A question closes when every participant has guessed or passed, when the answer timer ends, or when the host forces it. Matching is `matchesAnswer` (mechanics/answers.ts) against `answer` + `accept`. A correct answer scores 50, plus a speed bonus by time since the question opened (≤5s 50, ≤7.5s 35, ≤10s 25, ≤15s 15, then 0; `SPEED_TIERS`). The host can skip a question (it is never revealed and doesn't count). Questions come from a room-long shuffle bag: `seen` carries over via `setup(ctx, previous)`, so nothing repeats until the chosen categories are exhausted. Each question may list image `credits`; they are sent only with the reveal and shown on the TV then. Add levels with the **`create-guess-the-level`** skill (it finds images online first, downloads them under opaque names by default and strips metadata; external image URLs may also be used directly as `src`).
+**Guess The** (`src/games/guess-the/`): phases `guessing → reveal → (guessing | finished)`. Categories come from KV and are switched on or off by the host in the lobby (and mid-game) with the `setCategory` action; the choice lives in game state (`disabled`) and carries over play-again. A question closes when every participant has guessed or passed, when the answer timer ends, or when the host forces it. Matching is `matchesAnswer` (mechanics/answers.ts) against `answer` + `accept`. A correct answer scores 50, plus a speed bonus by time since the question opened (≤5s 50, ≤7.5s 35, ≤10s 25, ≤15s 15, then 0; `SPEED_TIERS`). The host can skip a question (it is never revealed and doesn't count). The room loads the catalog (`GameServer.loadContent` → `ctx.content`) when it is created, when its Durable Object wakes, and before each start, play-again, back-to-lobby or settings change; the open question is copied into state so edits can't break it mid-question. Questions come from a room-long shuffle bag: `seen` carries over via `setup(ctx, previous)`, so nothing repeats until the chosen categories are exhausted. Each question may list image `credits`; they are sent only with the reveal and shown on the TV then. **Content management** (no deploy needed; new content appears from a room's next game start): the Worker's admin API plus `node scripts/guess-the-catalog.mjs` (categories, levels, assets, export/import, seed); see `src/worker/guess-the-api.ts` for the routes. Add levels with the **`create-guess-the-level`** skill (finds images online, snaps and strips them, uploads to R2 under opaque names and saves the level to KV). Clue files are public at `/api/guess-the/assets/<category>/<file>` and `/api/guess-the/categories` lists categories, so other apps can reuse them; a Worker bound to the same KV/R2 can read `gt:categories` / `gt:levels:<category>` / `guess-the/<category>/<file>` directly. Set `ADMIN_TOKEN` (`.dev.vars`; `wrangler secret put` in prod). `npm run deploy` creates the KV namespace, uploads `ADMIN_TOKEN` from `.env` and seeds `seed/guess-the` when the live catalog is empty. Note `.env` now points the CLI and the skill's `add-level.mjs` at production; use `GUESS_API=http://localhost:5173` to work locally.
 
 **Momo Massacre** (`src/games/momo-massacre/`): phases come from `content/manifest.json` (types: cinematic, toast, announcement, carousel, investigation, finale). Characters are cast in the lobby (`HostLobbyPanel`); auto-cast fills non-optional characters (victim, killer) first, in random seat order. The host drives `setPhase`/`setToastStep`/`setSuspectIndex`, so every screen stays in sync. `revealClue` adds to the evidence board. With `GEMINI_API_KEY` and R2 configured and the `aiPortraits` setting on, casting a player who uploaded a selfie generates a portrait via `ctx.runAsync`.
 

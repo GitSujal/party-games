@@ -103,8 +103,9 @@ export default function Player({ room, game, send }: GameScreenProps<View>) {
                     </div>
                     <Clues images={q.images} shapes={q.shapes} compact />
                     {me.submitted ? (
-                        <div className="pg-stack pg-rule" style={{ ['--gap' as string]: '6px', paddingTop: 16 }}>
-                            <span className="pg-label-sm">{me.passed ? 'You passed' : 'Locked in'}</span>
+                        <div className="pg-stack pg-paper pg-enter" style={{ ['--gap' as string]: '6px', padding: 20, marginTop: 8 }}>
+                            <span className="pg-tape" aria-hidden />
+                            <span className="pg-eyebrow">{me.passed ? 'You passed' : 'Locked in'}</span>
                             {!me.passed && <span style={{ fontSize: 24, fontWeight: 600 }}>{me.guess}</span>}
                             <span className="pg-muted">Waiting for everyone else.</span>
                         </div>
@@ -121,7 +122,7 @@ export default function Player({ room, game, send }: GameScreenProps<View>) {
 
 function Reveal({ game, result }: { game: View; result: NonNullable<View['reveal']>['results'][number] | null }) {
     const answer = game.reveal!.answer;
-    if (result?.correct) return <Screen title={`Correct. +${result.points}`} sub={`It was ${answer}.`} />;
+    if (result?.correct) return <Screen title={<span className="pg-stamp">Correct +{result.points}</span>} sub={`It was ${answer}.`} />;
     return (
         <Screen title={result?.guess === null ? 'You passed.' : 'Not quite.'} sub={`It was ${answer}.`}>
             {result?.guess && <p className="pg-muted" style={{ margin: 0 }}>You said "{result.guess}".</p>}

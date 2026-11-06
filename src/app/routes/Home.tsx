@@ -18,11 +18,12 @@ const STEPS = [
 function GameCard({ game }: { game: GameMeta }) {
     return (
         <Link to={`/g/${game.id}`} className="game-card" style={themeStyle(game.theme)}>
+            <span className="pg-tape" aria-hidden />
             <GameTile game={game} />
             <div className="pg-stack" style={{ ['--gap' as string]: '6px' }}>
                 <div className="game-card__head">
                     <h3>{game.name}</h3>
-                    <span className="pg-label-sm" style={{ fontSize: 13 }}>
+                    <span className="pg-sticker" style={{ ['--r' as string]: '2deg' }}>
                         {game.players.min}–{game.players.max} players · {game.duration}
                     </span>
                 </div>
@@ -55,13 +56,9 @@ export default function Home() {
     return (
         <div className="pg-container">
             <SiteHeader>
-                <a href="#games" className="pg-muted">
-                    Games
-                </a>
-                <a href="#how" className="pg-muted">
-                    How it works
-                </a>
-                <Link to="/join" className="pg-btn pg-btn--sm" style={{ borderColor: 'var(--pg-text)' }}>
+                <a href="#games">Games</a>
+                <a href="#how">How it works</a>
+                <Link to="/join" className="pg-btn pg-btn--sm pg-btn--primary">
                     Join a game
                 </Link>
             </SiteHeader>
@@ -69,22 +66,28 @@ export default function Home() {
             <section className="hero">
                 <div className="pg-stack" style={{ ['--gap' as string]: '24px' }}>
                     <ResumeLink />
+                    <span className="pg-eyebrow">game night, sorted</span>
                     <h1 className="pg-display hero__title">
                         Games for the
                         <br />
-                        room you're in.
+                        <span className="pg-hl">room</span> you're in.
                     </h1>
                     <p className="hero__lede">One screen everyone can see. Every phone is a controller. No app, no accounts.</p>
                 </div>
-                <div className="hero__join">
+                <div className="hero__join pg-paper">
+                    <span className="pg-tape" aria-hidden />
                     <JoinCodeForm inline label="Have a room code?" />
                 </div>
             </section>
 
             <section id="games" className="site-section">
-                <div className="pg-rule section-head">
-                    <h2 className="pg-section-title">Games</h2>
-                    <span className="pg-label-sm">{games.length}</span>
+                <div className="section-head">
+                    <h2 className="pg-section-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+                        Pick a <span className="pg-squig">game</span>
+                    </h2>
+                    <span className="pg-hand" style={{ fontSize: '1.6rem', rotate: '-3deg' }}>
+                        {games.length} to play
+                    </span>
                 </div>
                 <div className="game-grid">
                     {games.map(g => (
@@ -94,14 +97,16 @@ export default function Home() {
             </section>
 
             <section id="how" className="site-section">
-                <div className="pg-rule section-head">
-                    <h2 className="pg-section-title">How it works</h2>
+                <div className="section-head">
+                    <h2 className="pg-section-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+                        How it works
+                    </h2>
                 </div>
                 <ol className="steps">
                     {STEPS.map((s, i) => (
                         <li key={s.title}>
-                            <span className="pg-mono pg-label-sm" style={{ fontSize: 13 }}>
-                                {String(i + 1).padStart(2, '0')}
+                            <span className="pg-sticker pg-sticker--cyan" style={{ ['--r' as string]: `${i % 2 ? 3 : -3}deg` }}>
+                                Step {i + 1}
                             </span>
                             <h3>{s.title}</h3>
                             <p className="pg-muted">{s.body}</p>
@@ -130,7 +135,7 @@ export default function Home() {
                         maxLength={8}
                         onChange={e => setHostCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                     />
-                    <button type="submit" className="pg-btn pg-btn--sm" disabled={hostCode.length < 4}>
+                    <button type="submit" className="pg-btn pg-btn--sm pg-btn--primary" disabled={hostCode.length < 4}>
                         Open
                     </button>
                 </form>

@@ -1,5 +1,5 @@
 /**
- * The Party Games UI kit. Games should build their screens from these so every
+ * The Party Games by Data Sparta UI kit. Games should build their screens from these so every
  * game feels like part of the same platform and picks up its theme automatically.
  */
 export { Button, IconButton, ConfirmButton, type ButtonProps } from './components/Button';

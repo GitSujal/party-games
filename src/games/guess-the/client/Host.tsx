@@ -12,7 +12,7 @@ function Standings({ game, players }: { game: View; players: Player[] }) {
     const results = game.reveal?.results;
     return (
         <section className="pg-stack" style={{ ['--gap' as string]: '0px' }}>
-            <h2 className="pg-label-sm" style={{ margin: 0, paddingBottom: 12, borderBottom: '1px solid var(--pg-border)', fontWeight: 400 }}>
+            <h2 className="pg-eyebrow" style={{ margin: 0, paddingBottom: 12, alignSelf: 'flex-start' }}>
                 Leaderboard
             </h2>
             {game.leaderboard.map(row => {
@@ -20,18 +20,20 @@ function Standings({ game, players }: { game: View; players: Player[] }) {
                 const answered = game.submitted.includes(row.id);
                 return (
                     <div key={row.id} className="guess-standing">
-                        <span className="pg-mono pg-muted">{row.rank}</span>
+                        <span className="guess-standing__rank" data-top={row.rank === 1 ? '1' : undefined}>
+                            {row.rank}
+                        </span>
                         <span className="guess-standing__name">
                             {nameOf(players, row.id)}
                             {result && (
-                                <span className="guess-standing__guess" style={{ color: result.correct ? 'var(--pg-primary)' : 'var(--pg-muted)' }}>
+                                <span className="guess-standing__guess" style={{ color: result.correct ? 'var(--pg-cyan-deep)' : 'var(--pg-muted)' }}>
                                     {result.guess === null ? 'Passed' : result.guess}
                                 </span>
                             )}
                         </span>
                         <span className="pg-mono" style={{ textAlign: 'right' }}>
                             {result ? (
-                                result.points > 0 && <span style={{ color: 'var(--pg-primary)', marginRight: 10 }}>+{result.points}</span>
+                                result.points > 0 && <span className="guess-standing__plus">+{result.points}</span>
                             ) : (
                                 game.phase === 'guessing' && <span className={answered ? 'pg-dot' : 'pg-dot pg-dot--off'} title={answered ? 'Answered' : 'Thinking'} style={{ marginRight: 12 }} />
                             )}
@@ -97,11 +99,17 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
         const top = game.leaderboard.filter(r => r.rank === 1);
         return layout(
             <>
-                <span className="pg-label-sm" style={{ fontSize: 18 }}>
+                <span className="pg-eyebrow" style={{ fontSize: '2.2rem' }}>
                     Game over
                 </span>
                 <h1 className="pg-display" style={{ fontSize: 'clamp(56px, 8vw, 112px)', margin: 0 }}>
-                    {top.length ? `${top.map(r => nameOf(players, r.id)).join(' and ')} ${top.length > 1 ? 'win' : 'wins'}.` : 'Game over.'}
+                    {top.length ? (
+                        <>
+                            <span className="pg-hl">{top.map(r => nameOf(players, r.id)).join(' and ')}</span> {top.length > 1 ? 'win' : 'wins'}.
+                        </>
+                    ) : (
+                        'Game over.'
+                    )}
                 </h1>
                 {top[0] && (
                     <p className="pg-muted" style={{ fontSize: 24, margin: 0 }}>
@@ -123,7 +131,7 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
     const head = (
         <div className="pg-row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 24 }}>
             <div className="pg-stack" style={{ ['--gap' as string]: '6px' }}>
-                <span className="pg-label-sm" style={{ fontSize: 16 }}>
+                <span className="pg-eyebrow">
                     Question {game.round} of {game.total}
                 </span>
                 <h1 className="pg-display" style={{ fontSize: 'clamp(40px, 5vw, 72px)', margin: 0 }}>
@@ -141,11 +149,9 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
                 {head}
                 <Clues images={q.images} shapes={q.shapes} />
                 <div className="pg-stack pg-enter guess-foot" style={{ ['--gap' as string]: '6px' }}>
-                    <span className="pg-label-sm" style={{ fontSize: 16 }}>
-                        The answer
-                    </span>
-                    <span className="pg-display" style={{ fontSize: 'clamp(44px, 6vw, 88px)', color: 'var(--pg-primary)' }}>
-                        {game.reveal.answer}
+                    <span className="pg-eyebrow">The answer</span>
+                    <span className="pg-display" style={{ fontSize: 'clamp(40px, 5vw, 76px)', lineHeight: 1.05, paddingBlock: 4 }}>
+                        <span className="pg-hl pg-hl--cyan">{game.reveal.answer}</span>
                     </span>
                     <span className="pg-muted" style={{ fontSize: 20 }}>
                         {right === 0 ? 'Nobody got it.' : right === everyone ? 'Everyone got it.' : `${right} of ${everyone} got it.`}

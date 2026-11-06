@@ -1,9 +1,9 @@
 ---
 name: new-party-game
-description: Create a new game on the Party Games platform (partygames.datasparta.com) by reusing its rooms, realtime Durable Object, mechanics (voting, roles, timers, scoring, teams) and UI kit. Use when the user wants to add, build, scaffold or prototype a new party game, or turn a game idea into a playable game in this repo.
+description: Create a new game on the Party Games by Data Sparta platform (partygames.datasparta.com) by reusing its rooms, realtime Durable Object, mechanics (voting, roles, timers, scoring, teams) and UI kit. Use when the user wants to add, build, scaffold or prototype a new party game, or turn a game idea into a playable game in this repo.
 ---
 
-# Build a new Party Games game
+# Build a new Party Games by Data Sparta game
 
 The platform already provides rooms, QR join, a WebSocket sync per room (one Durable Object
 each), host auth/PIN, lobby, kick, play-again, rules modal, theming, reconnects and expiry.

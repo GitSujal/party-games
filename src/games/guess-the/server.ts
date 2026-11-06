@@ -15,24 +15,20 @@
 import { z } from 'zod';
 import { GameError, defineAction, defineServer, type GameContext, type SettingValue, type Viewer } from '../../platform/sdk';
 import { addPoints, assertPhase, leaderboard, matchesAnswer, startCountdown, type Countdown, type Scores } from '../../platform/mechanics';
-import { CATEGORIES, categoryKey } from './categories';
-import dims from './dims.json';
+import { loadCatalog } from './catalog/store';
+import { ASSET_ROUTE, type Catalog, type CatalogEnv, type Clue } from './catalog/types';
 
 type Settings = { questions: number; answerSeconds: number } & Record<string, SettingValue>;
 type Ctx = GameContext<Settings>;
 type Phase = 'lobby' | 'guessing' | 'reveal' | 'finished';
 
-export interface QuestionFile {
-    /** `credits`: attribution for the clue images, shown only at the reveal. */
-    questions: { id: string; answer: string; accept?: string[]; images: string[]; credits?: string[] }[];
-}
-
-interface Question {
+/** A level, as dealt. `credits` are attribution for the clues, shown only at the reveal. */
+export interface Question {
     key: string;
     category: string;
     answer: string;
     accept: string[];
-    images: string[];
+    clues: Clue[];
     credits: string[];
 }
 
@@ -50,11 +46,14 @@ export interface State {
     total: number;
     /** Keys of upcoming questions. Never sent to clients. */
     deck: string[];
+    /** Categories the host switched off. Carried across games in the room. */
+    disabled: string[];
     /** Keys already dealt in this room (current cycle). Carried across games. */
     seen: string[];
     /** Keys dealt in this game. */
     dealt: string[];
-    current: { key: string; openedAt: number } | null;
+    /** `q` is a copy made when the question opened, so editing the catalog mid-question can't break it. Never sent to clients. */
+    current: { key: string; openedAt: number; q: Question } | null;
     participants: string[];
     guesses: Record<string, Guess>;
     scores: Scores;
@@ -72,36 +71,43 @@ export const SPEED_TIERS = [
 ];
 const ANSWER_TIMER = 'answer';
 
-const files = import.meta.glob<QuestionFile>('./content/guess-the-*.json', { eager: true, import: 'default' });
+const EMPTY: Catalog = { categories: [], levels: {} };
+const catalogOf = (ctx: { content: unknown }): Catalog => (ctx.content as Catalog | undefined) ?? EMPTY;
 
-/** Every question, by key `<category>/<id>`. */
-export const QUESTIONS: Record<string, Question> = {};
-for (const [path, file] of Object.entries(files)) {
-    const category = path.match(/guess-the-(.+)\.json$/)![1];
-    for (const q of file.questions) {
-        QUESTIONS[`${category}/${q.id}`] = { key: `${category}/${q.id}`, category, answer: q.answer, accept: q.accept ?? [], images: q.images, credits: q.credits ?? [] };
+const questionIndex = new WeakMap<Catalog, Record<string, Question>>();
+/** Every question in the loaded catalog, by key `<category>/<id>`. */
+export function questionsOf(ctx: { content: unknown }): Record<string, Question> {
+    const catalog = catalogOf(ctx);
+    let index = questionIndex.get(catalog);
+    if (!index) {
+        index = {};
+        for (const [category, levels] of Object.entries(catalog.levels)) {
+            for (const l of levels) index[`${category}/${l.id}`] = { key: `${category}/${l.id}`, category, answer: l.answer, accept: l.accept ?? [], clues: l.clues, credits: l.credits ?? [] };
+        }
+        questionIndex.set(catalog, index);
     }
+    return index;
 }
 
-/** [width, height] of each local clue (scripts/guess-the-media.mjs). Shapes are public; they let clients lay out before images load. */
-const DIMS = dims as unknown as Record<string, [number, number]>;
-const shapeOf = (src: string): [number, number] | null => DIMS[src] ?? null;
-const imageUrl = (src: string) => (/^(https?:)?\//.test(src) ? src : `/games/guess-the/${src}`);
-const categoryName = (id: string) => CATEGORIES.find(c => c.id === id)?.name ?? id;
+/** Content (KV/R2) is read by the room, not the bundle. See catalog/store.ts. */
+const loadContent = (env: unknown) => loadCatalog(env as CatalogEnv);
 
-export function enabledCategories(settings: Settings): string[] {
-    return CATEGORIES.map(c => c.id).filter(id => settings[categoryKey(id)] !== false);
+const categoryOf = (key: string) => key.slice(0, key.indexOf('/'));
+const imageUrl = (src: string) => (/^https?:\/\//.test(src) ? src : ASSET_ROUTE + src);
+
+export function enabledCategories(state: { disabled: string[] }, ctx: { content: unknown }): string[] {
+    return catalogOf(ctx).categories.map(c => c.id).filter(id => !state.disabled.includes(id));
 }
 
-const poolOf = (settings: Settings) => {
-    const categories = enabledCategories(settings);
-    return Object.keys(QUESTIONS).filter(k => categories.includes(QUESTIONS[k].category));
+const poolOf = (state: State, ctx: Ctx) => {
+    const categories = enabledCategories(state, ctx);
+    return Object.keys(questionsOf(ctx)).filter(k => categories.includes(categoryOf(k)));
 };
 
 /** Shuffle each category, then deal them round-robin so categories stay mixed. */
 function shuffleMixed(keys: string[], ctx: Ctx): string[] {
-    const categories = [...new Set(keys.map(k => QUESTIONS[k].category))];
-    const piles = categories.map(c => ctx.random.shuffle(keys.filter(k => QUESTIONS[k].category === c)));
+    const categories = [...new Set(keys.map(categoryOf))];
+    const piles = categories.map(c => ctx.random.shuffle(keys.filter(k => categoryOf(k) === c)));
     const deck: string[] = [];
     while (piles.some(p => p.length)) {
         for (const pile of ctx.random.shuffle(piles)) if (pile.length) deck.push(pile.shift()!);
@@ -112,7 +118,7 @@ function shuffleMixed(keys: string[], ctx: Ctx): string[] {
 /** Unseen questions first (shuffled); already-seen ones only after the bag runs dry. */
 function buildDeck(state: State, ctx: Ctx): string[] {
     // Questions already played in this game are never dealt again.
-    const pool = poolOf(ctx.settings).filter(k => !state.dealt.includes(k));
+    const pool = poolOf(state, ctx).filter(k => !state.dealt.includes(k));
     const unseen = pool.filter(k => !state.seen.includes(k));
     const seen = pool.filter(k => state.seen.includes(k));
     return [...shuffleMixed(unseen, ctx), ...shuffleMixed(seen, ctx)];
@@ -121,17 +127,21 @@ function buildDeck(state: State, ctx: Ctx): string[] {
 /** Record a dealt question. Once the whole pool has been seen, a new cycle starts. */
 function markSeen(state: State, key: string, ctx: Ctx): void {
     if (state.seen.includes(key)) {
-        const pool = poolOf(ctx.settings);
+        const pool = poolOf(state, ctx);
         state.seen = state.seen.filter(k => !pool.includes(k) || state.dealt.includes(k));
     }
     state.seen.push(key);
     state.dealt.push(key);
 }
 
-function openQuestion(state: State, ctx: Ctx): void {
-    const key = state.deck.shift()!;
+/** Deal the next question. False when the deck has nothing left (a level may have been deleted since it was built). */
+function openQuestion(state: State, ctx: Ctx): boolean {
+    const questions = questionsOf(ctx);
+    let key = state.deck.shift();
+    while (key && !questions[key]) key = state.deck.shift();
+    if (!key) return false;
     markSeen(state, key, ctx);
-    state.current = { key, openedAt: ctx.now() };
+    state.current = { key, openedAt: ctx.now(), q: questions[key] };
     state.guesses = {};
     state.reveal = null;
     state.phase = 'guessing';
@@ -142,6 +152,7 @@ function openQuestion(state: State, ctx: Ctx): void {
     } else {
         state.countdown = null;
     }
+    return true;
 }
 
 function speedPoints(state: State, ctx: Ctx): number {
@@ -154,9 +165,9 @@ function reveal(state: State, ctx: Ctx): void {
     state.countdown = null;
     for (const [id, g] of Object.entries(state.guesses)) addPoints(state.scores, id, g.points);
     state.reveal = {
-        answer: QUESTIONS[state.current!.key].answer,
+        answer: state.current!.q.answer,
         // Credits can name the subject, so they're only sent with the answer.
-        credits: QUESTIONS[state.current!.key].credits,
+        credits: state.current!.q.credits,
         results: state.participants.map(id => {
             const g = state.guesses[id];
             return { id, guess: g?.text ?? null, correct: !!g?.correct, points: g?.points ?? 0 };
@@ -181,16 +192,17 @@ function submit(state: State, ctx: Ctx, playerId: string, text: string | null): 
     assertPhase(state.phase, 'guessing');
     if (!state.participants.includes(playerId)) throw new GameError("You're not in this game");
     if (state.guesses[playerId]) throw new GameError('You already answered');
-    const q = QUESTIONS[state.current!.key];
+    const q = state.current!.q;
     const correct = text !== null && matchesAnswer(text, [q.answer, ...q.accept]);
     state.guesses[playerId] = { text, correct, points: correct ? speedPoints(state, ctx) : 0 };
     if (everyoneIn(state)) reveal(state, ctx);
 }
 
-function view(state: State, viewer: Viewer, { settings }: Ctx) {
+function view(state: State, viewer: Viewer, ctx: Ctx) {
     const me = viewer.playerId;
     const inGame = !!me && state.participants.includes(me);
-    const q = state.current ? QUESTIONS[state.current.key] : null;
+    const q = state.current?.q ?? null;
+    const catalog = catalogOf(ctx);
     const board = leaderboard(state.scores, state.participants);
     const mine = me ? state.guesses[me] : undefined;
 
@@ -199,7 +211,7 @@ function view(state: State, viewer: Viewer, { settings }: Ctx) {
         round: state.round,
         total: state.total,
         // The answer is never part of `question`; it only appears in `reveal`.
-        question: q ? { category: categoryName(q.category), prompt: `Guess the ${categoryName(q.category)}`, images: q.images.map(imageUrl), shapes: q.images.map(shapeOf) } : null,
+        question: q ? { category: categoryName(catalog, q.category), prompt: `Guess the ${categoryName(catalog, q.category)}`, images: q.clues.map(c => imageUrl(c.src)), shapes: q.clues.map(c => c.shape ?? null) } : null,
         countdown: state.countdown,
         participants: state.participants,
         /** Who has answered (ids only), during guessing. */
@@ -208,11 +220,11 @@ function view(state: State, viewer: Viewer, { settings }: Ctx) {
         leaderboard: board,
         canSkip: state.deck.length > 0,
         /** Enabled categories, and how many unplayed questions each still has. */
-        categories: CATEGORIES.map(c => ({
+        categories: catalog.categories.map(c => ({
             id: c.id,
             name: c.name,
-            enabled: settings[categoryKey(c.id)] !== false,
-            left: Object.values(QUESTIONS).filter(q => q.category === c.id && !state.dealt.includes(q.key)).length,
+            enabled: !state.disabled.includes(c.id),
+            left: (catalog.levels[c.id] ?? []).filter(l => !state.dealt.includes(`${c.id}/${l.id}`)).length,
         })),
         isLast: state.round >= state.total || state.deck.length === 0,
         me: inGame
@@ -230,15 +242,20 @@ function view(state: State, viewer: Viewer, { settings }: Ctx) {
 
 export type View = ReturnType<typeof view>;
 
+const categoryName = (catalog: Catalog, id: string) => catalog.categories.find(c => c.id === id)?.name ?? id;
+
 const categoryToggle = z.object({ id: z.string(), enabled: z.boolean() });
 const guess = z.object({ text: z.string().trim().min(1, 'Type a guess').max(80) });
 
 export default defineServer<State, Settings>({
+    loadContent,
+
     setup: (_ctx, previous) => ({
         phase: 'lobby',
         round: 0,
         total: 0,
         deck: [],
+        disabled: previous?.disabled ?? [],
         seen: previous?.seen ?? [],
         dealt: [],
         current: null,
@@ -251,7 +268,7 @@ export default defineServer<State, Settings>({
 
     start(state, ctx) {
         const deck = buildDeck(state, ctx);
-        if (deck.length === 0) return 'Pick at least one category';
+        if (deck.length === 0) return catalogOf(ctx).categories.length ? 'Pick at least one category with questions' : 'No questions are available yet';
         state.dealt = [];
         state.participants = ctx.players.map(p => p.id);
         state.scores = Object.fromEntries(state.participants.map(id => [id, 0]));
@@ -286,8 +303,7 @@ export default defineServer<State, Settings>({
             by: 'host',
             handle(state, _p, ctx) {
                 assertPhase(state.phase, 'guessing');
-                if (state.deck.length === 0) throw new GameError('No more questions in these categories');
-                openQuestion(state, ctx);
+                if (!openQuestion(state, ctx)) throw new GameError('No more questions in these categories');
                 ctx.emit({ type: 'skipped' });
             },
         }),
@@ -296,21 +312,21 @@ export default defineServer<State, Settings>({
             by: 'host',
             handle(state, _p, ctx) {
                 assertPhase(state.phase, 'reveal');
-                if (state.round >= state.total || state.deck.length === 0) return finish(state, ctx);
+                if (state.round >= state.total || !openQuestion(state, ctx)) return finish(state, ctx);
                 state.round++;
-                openQuestion(state, ctx);
             },
         }),
 
-        /** Switch categories on or off mid-game. Takes effect from the next question. */
+        /** Switch categories on or off, in the lobby or mid-game. Takes effect from the next question. */
         setCategory: defineAction<State, Settings, z.infer<typeof categoryToggle>>({
             by: 'host',
             schema: categoryToggle,
             handle(state, { id, enabled }, ctx) {
-                assertPhase(state.phase, 'guessing', 'reveal');
-                if (!CATEGORIES.some(c => c.id === id)) throw new GameError('Unknown category');
-                // Persisted in the room's settings, so the lobby and play-again keep the choice.
-                ctx.settings[categoryKey(id)] = enabled;
+                assertPhase(state.phase, 'lobby', 'guessing', 'reveal');
+                if (!catalogOf(ctx).categories.some(c => c.id === id)) throw new GameError('Unknown category');
+                // Kept in state (and carried over by setup), so play-again keeps the choice.
+                state.disabled = enabled ? state.disabled.filter(d => d !== id) : [...new Set([...state.disabled, id])];
+                if (state.phase === 'lobby') return;
                 const deck = buildDeck(state, ctx);
                 if (deck.length === 0) throw new GameError('Keep at least one category with questions left');
                 state.deck = deck;

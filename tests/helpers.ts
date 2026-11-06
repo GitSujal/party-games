@@ -16,7 +16,7 @@ const noMedia: MediaService = {
     generateFromPhoto: () => Promise.reject(new Error('not configured')),
 };
 
-export function harness<State, S extends Settings>(server: GameServer<State, S>, roster: Player[], settings: S, seed = 42) {
+export function harness<State, S extends Settings>(server: GameServer<State, S>, roster: Player[], settings: S, seed = 42, content?: unknown) {
     const timers = new Map<string, number>();
     const events: { type: string }[] = [];
     let now = 1_000_000;
@@ -33,6 +33,7 @@ export function harness<State, S extends Settings>(server: GameServer<State, S>,
         },
         emit: e => events.push(e),
         media: noMedia,
+        content,
         photoKeyOf: () => null,
         runAsync: () => undefined,
     };

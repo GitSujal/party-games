@@ -1,13 +1,24 @@
 ---
 name: create-guess-the-level
-description: Create levels (questions) for the Guess The game in this repo. Each level is an answer plus 1 to 5 picture or short video clues in a category such as Movie, Actor, Word, Phrase or Sports Person. Finds clue images online first (Wikimedia photos of famous people and landmarks, Twemoji emoji, letter and text cards), finds short clips for actions, and generates images or videos with the user's local API only as a last resort. Use when the user wants to add, write, generate, import or bulk-create Guess The questions or levels, find or add clue images or videos, or add a new "Guess the ..." category.
+description: Manage the content of the Guess The game in this repo (live in Cloudflare KV and R2): create, update, replace clues of, delete and list levels (questions), and add, rename, reorder or delete categories. Each level is an answer plus 1 to 5 picture or short video clues in a category such as Movie, Actor, Word, Phrase or Sports Person. Finds clue images online first (Wikimedia photos of famous people and landmarks, Twemoji emoji, letter and text cards), finds short clips for actions, and generates images or videos with the user's local API only as a last resort. Use when the user wants to add, write, generate, import, bulk-create, edit, fix, rename, replace the image of, remove or delete Guess The questions or levels or categories, or find or add clue images or videos.
 ---
 
-# Create Guess The levels
+# Manage Guess The levels
 
 A **level** is one question: an answer, optional accepted aliases, and 1–5 clues shown in
-order. A clue is a picture or a short silent looping video (for actions). Levels live in `src/games/guess-the/content/guess-the-<category>.json` (server-only,
-secret) and clue files (images and MP4s) in `public/games/guess-the/<category>/` (public).
+order. A clue is a picture or a short silent looping video (for actions). Levels live in Cloudflare KV (secret: they hold answers) and clue files (images and MP4s) in R2 (public, served at
+`/api/guess-the/assets/<category>/<file>`). You change them through the Worker's admin API, so nothing is deployed: changes
+appear in a room from its next game start (a question already open is unaffected).
+
+**Which environment you are writing to.** The scripts (`scripts/guess-the-catalog.mjs`, `add-level.mjs`) target `GUESS_API`
+and `ADMIN_TOKEN`, read from the environment or `.env`; with neither they use `http://localhost:5173` (run `npm run dev`
+first; the token comes from `.dev.vars`). The project's `.env` may point at **production**. Before the first write of a
+session, check the target (`grep '^GUESS_API' .env`, never print the token) and, if it is not localhost, tell the user and
+get a clear yes. To work locally regardless: `GUESS_API=http://localhost:5173 node …`. Reads (`categories`, `levels`,
+`level show`, `assets`) are safe anywhere. Never delete, rename or `--force` anything on production unless the user named it.
+
+`seed/guess-the/` is only the starting content that `npm run deploy` loads into an empty catalog. Live edits don't change it;
+`node scripts/guess-the-catalog.mjs export <file>` takes a backup.
 
 You never need to order or shuffle levels. The server deals them randomly from a shuffle bag
 that lasts for the whole room: within a game nothing repeats, and across Play again / Back to
@@ -18,7 +29,7 @@ lobby every question in the chosen categories is used before any repeats. So jus
 ### 1. Gather the levels
 
 For each level, pin down:
-- **Category**: one of the ids in `src/games/guess-the/categories.ts` (`movie`, `actor`, `nepali-surnames`, …).
+- **Category**: one of the ids from `node scripts/guess-the-catalog.mjs categories`.
 - **Answer**: exactly as it should appear on the TV at reveal, properly cased ("The Lion King").
 - **Aliases** (`--accept`): only what the matcher would NOT already accept (see below). Nicknames ("The Rock"), surname or first name alone for famous people ("Messi"), abbreviations ("LOTR", "SRK"), and alternate or translated titles.
 - **Clues** (1–5): where the images come from (see step 2).
@@ -113,19 +124,47 @@ node .claude/skills/create-guess-the-level/add-level.mjs actor "Tom Cruise" --ac
 ```
 
 The script:
-- picks the next id (`m5`, `w5`, …);
+- asks the server for the next id (`m5`, `w5`, …);
 - downloads web images, videos and Twemoji, copies local files, renders text cards and calls the local API for `gen-*` clues, storing everything under opaque names;
 - converts videos to silent MP4 and prints a frame sheet for each one;
-- appends the entry, credits included, to the JSON.
+- uploads the clues to R2 and saves the level, credits included, to KV (rolling the uploads back if that fails).
 
 It refuses unknown categories, duplicate answers, a clue count outside 1–5, missing files, URLs
 that return a page instead of an image, and text or SVG clues that give the answer away. Use
 `--dry-run` to fetch and check without writing. For bulk work, run it once per level; don't
 hand-edit ids.
 
-Hand-editing the JSON is fine for fixing typos, aliases or credits. Each entry looks like
-`{ "id": "m5", "answer": "…", "accept": ["…"], "images": ["movie/m5-1.jpg"], "credits": ["…"] }`.
-Image paths are relative to `public/games/guess-the/`.
+A level is `{ id, answer, accept, clues: [{ src: "movie/ab12cd.jpg", shape: [w, h] }], credits, updatedAt }`.
+
+### Updating, replacing and deleting levels
+
+Always find the level first: `node scripts/guess-the-catalog.mjs levels <category>` (ids and answers) and
+`level show <category> <id>` (full JSON). Then:
+
+| Want to… | Command |
+|---|---|
+| Fix the answer's spelling or casing | `level update <cat> <id> --answer "The Lion King"` |
+| Add or change aliases | `level update <cat> <id> --accept "LOTR" --accept "Lord of the Rings"` (the list **replaces** the old one, so repeat the existing aliases you keep) |
+| Remove all aliases / credits | `level update <cat> <id> --no-accept` / `--no-credits` |
+| Fix credits | `level update <cat> <id> --credit "Photo: …" --credit "…"` (replaces the list; keep one credit per clue, same order) |
+| Reorder clues, or drop one | `level update <cat> <id> --clue movie/ab12.jpg --clue movie/cd34.png` (list the `category/file` clues to keep, in the new order; a dropped clue's file is deleted unless another level uses it) |
+| Replace one clue's picture | see below |
+| Delete a level | `level rm <cat> <id>` (also deletes the files only it used) |
+
+`level update` only changes what you pass and checks the result the same way adding does (duplicate answers, answer in a
+file name, missing files). New `--clue` files or URLs it uploads are stored **as given**: they are not cropped to a canonical
+shape or stripped of metadata. So to replace a picture:
+1. Prefer re-creating the level: `level rm`, then `add-level.mjs` with the corrected clues (the id changes, which is harmless).
+2. Or, if the new file is already right (a picture you shaped yourself, ≤1024px, 1:1, 4:3, 3:4 or 16:9, no metadata), pass the
+   full clue list to `level update --clue …` with the existing `category/file` entries kept as they are and the new file in
+   its slot, then fix `--credit` to match.
+
+Bulk edits: loop the commands one level at a time and report each. For anything bigger, `export` first to keep a backup.
+
+Orphaned files (uploaded but unused, e.g. from an aborted run): `assets <cat>` shows `(unused)`; `asset prune <cat>`
+deletes them. `asset rm <cat> <file>` deletes one and refuses if a level still uses it (don't pass `--force` unless asked).
+
+Other commands: `asset add`, `category add|rename|order|rm`, `export`, `import`, `seed`.
 
 ### What the matcher already accepts (don't add these as aliases)
 
@@ -135,28 +174,35 @@ spaces excluded): ≤3 → 0, 4–6 → 1, 7–12 → 2, 13+ → 3. So "lion kng
 "The Lion King". Watch for **short answers** that sit within a typo or two of a different
 common word: for example, "Up" accepts only "up". If a wrong answer would wrongly match, say so to the user.
 
-### 4. A new category (only if asked)
+### 4. Categories (only if asked)
 
-1. Add `{ id: 'kebab-id', name: 'Display Name' }` to `CATEGORIES` in `src/games/guess-the/categories.ts`. The prompt becomes "Guess the <name>", and a host on/off setting appears automatically.
-2. Create `src/games/guess-the/content/guess-the-<id>.json` with `{ "questions": [] }`, then add levels with the script.
-3. Make sure the category has at least a few levels before shipping. A test fails if the JSON files and `CATEGORIES` don't match.
+Delete a category with `category rm <id>` (refused while it has levels). `--force` deletes its levels and files too: only with an
+explicit request, after showing the user how many levels will go. Renaming changes only the display name, never the id.
+
+New category:
+
+1. `node scripts/guess-the-catalog.mjs category add "Display Name" [--id kebab-id]`. The prompt becomes "Guess the <name>", and the host sees a lobby switch for it automatically.
+2. Add levels with the script.
+3. Make sure the category has at least a few levels before players use it. (Rename with `category rename`, reorder with `category order`, delete with `category rm [--force]`.)
 
 ## Verify (all must pass before reporting done)
 
 ```bash
-npm test          # content test: every category has a file, 1–5 images, no answer in image paths
+npm test          # store, API and game logic
 npm run build
-node -e "for (const f of require('fs').readdirSync('src/games/guess-the/content')) for (const q of require('./src/games/guess-the/content/'+f).questions) console.log(q.answer)" > "$SCRATCH/answers.txt"
+node scripts/guess-the-catalog.mjs export "$SCRATCH/catalog.json"
+node -e "const c=require(process.argv[1]);for(const l of Object.values(c.levels).flat())console.log(l.answer)" "$SCRATCH/catalog.json" > "$SCRATCH/answers.txt"
 grep -rliFf "$SCRATCH/answers.txt" dist/client   # must print nothing
 ```
 
 (`$SCRATCH` is your scratchpad directory.) Very short answers like "Up" can false-positive in
 minified JS. If grep hits, open the match and confirm it isn't the content.
 
-Look at every new image (Read the file) and every video's frame sheet before reporting. Then tell the user how many
-levels were added per category, and list any that have a weak clue or a risky short answer.
-Deploy only when the user asks (`npm run deploy`).
+Look at every new image (Read the file) and every video's frame sheet before reporting. After any change, run
+`levels <category>` (and `level show` for edited ones) to confirm the live state. Then tell the user which environment you
+wrote to and what changed: levels added, updated or deleted per category, and any that have a weak clue or a risky short
+answer. No deploy is needed for content changes; `npm run deploy` is only for code.
 
 ## Clue shapes
 
-`add-level.mjs` snaps every picture to 1:1, 4:3, 3:4 or 16:9 (crop if within 8%, otherwise pad), caps the long edge at 1024px and records each clue's size in `src/games/guess-the/dims.json` (the server sends it so the TV lays clues out before they load). After adding or replacing files by hand, run `node scripts/guess-the-media.mjs normalize --write` to snap them and rebuild `dims.json`.
+`add-level.mjs` snaps every picture to 1:1, 4:3, 3:4 or 16:9 (crop if within 8%, otherwise pad), caps the long edge at 1024px and stores each clue's size with the clue (the server sends it so the TV lays clues out before they load). `seed/guess-the/` holds the starting content: after editing its files by hand, run `node scripts/guess-the-media.mjs normalize --write` (snaps them and refreshes the sizes in `seed/guess-the/catalog.json`), then `node scripts/guess-the-catalog.mjs seed`.

@@ -1,5 +1,5 @@
 /**
- * Party Games SDK — the contract every game implements.
+ * Party Games by Data Sparta SDK — the contract every game implements.
  *
  * A game is three pieces:
  *   meta.ts    GameMeta     (shared: catalog card, players, settings, theme)
@@ -155,6 +155,11 @@ export interface GameContext<S extends Settings = Settings> {
     /** Send an ephemeral event to everyone (default) or one viewer. */
     emit(event: GameEvent, to?: Viewer): void;
     media: MediaService;
+    /**
+     * Whatever the game's `loadContent` returned (undefined if it has none). Loaded when the room is
+     * created and each time a game starts or restarts, never per action. Treat it as read-only.
+     */
+    content: unknown;
     /** Storage key of a player's uploaded photo, if any. Server-only. */
     photoKeyOf(playerId: string): string | null;
     /**
@@ -184,6 +189,12 @@ export interface GameServer<State, S extends Settings = Settings> {
     setup(ctx: GameContext<S>, previous?: State): State;
     /** Host pressed Start. Return an error message to refuse (e.g. not enough players). */
     start(state: State, ctx: GameContext<S>): string | void;
+    /**
+     * Fetch content that lives outside the bundle (KV, R2). `env` is the Worker's bindings. Called when a
+     * room is created, when its Durable Object wakes, and before a game starts, restarts or returns to the
+     * lobby. The result is handed to every handler as `ctx.content`.
+     */
+    loadContent?(env: unknown): Promise<unknown>;
     actions: Record<string, ActionDef<State, S, any>>;
     onPlayerJoin?(state: State, player: Player, ctx: GameContext<S>): void;
     onPlayerLeave?(state: State, playerId: string, ctx: GameContext<S>): void;

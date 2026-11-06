@@ -208,9 +208,11 @@ async function momo() {
 
 async function guessThe() {
     console.log('\nGuess The');
-    const onlyMovies = { 'category:actor': false, 'category:nepali-surnames': false };
-    const room = await http('POST', '/api/rooms', { gameId: 'guess-the', settings: { questions: 2, answerSeconds: 0, ...onlyMovies } });
+    const room = await http('POST', '/api/rooms', { gameId: 'guess-the', settings: { questions: 2, answerSeconds: 0 } });
     const host = await connect(room.code, room.hostToken);
+    // Categories come from KV (seed it first: node scripts/guess-the-catalog.mjs seed). Pick only movies in the lobby.
+    await host.until(() => host.state?.game?.categories?.length && host.state);
+    for (const c of host.state.game.categories.filter(c => c.id !== 'movie')) await host.send('setCategory', { id: c.id, enabled: false });
     const seats = [];
     for (const name of ['Ann', 'Ben', 'Cat']) seats.push(await http('POST', `/api/rooms/${room.code}/join`, { name }));
     const phones = await Promise.all(seats.map(s => connect(room.code, s.playerToken)));
@@ -251,6 +253,7 @@ async function guessThe() {
 
     // Play again: the shuffle bag carries over, so none of the questions dealt so far come back.
     const shown = new Set(host.frames.filter(f => f.t === 'state' && f.game?.question).map(f => f.game.question.images[0]));
+    const unseen = host.state.game.categories.find(c => c.id === 'movie').left;
     await host.send('room:playAgain');
     await host.until(() => host.state.game.phase === 'guessing' && host.state.game.round === 1 && host.state);
     const again = [host.state.game.question.images[0]];
@@ -258,7 +261,8 @@ async function guessThe() {
     await host.send('next');
     await host.until(() => host.state.game.round === 2 && host.state.game.phase === 'guessing' && host.state);
     again.push(host.state.game.question.images[0]);
-    check(again.every(img => !shown.has(img)), `play again deals unseen questions (${shown.size} seen before)`);
+    // Unseen questions come first; once they run out the bag refills (only 4 movies are seeded).
+    check(again.slice(0, Math.min(unseen, 2)).every(img => !shown.has(img)), `play again deals unseen questions first (${shown.size} seen, ${unseen} unseen)`);
     [host, ...phones].forEach(c => c.close());
 }
 

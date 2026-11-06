@@ -41,7 +41,7 @@ interface RoomRecord {
 /** Stored on each socket so identity survives hibernation. */
 type Attachment = Viewer;
 
-export type RpcResult<T> = { ok: true; value: T } | { ok: false; status: 400 | 403 | 404 | 409 | 410 | 423; error: string };
+export type RpcResult<T> = { ok: true; value: T } | { ok: false; status: 400 | 403 | 404 | 409 | 410 | 423 | 503; error: string };
 
 interface Effects {
     events: { event: GameEvent; to?: Viewer }[];
@@ -49,11 +49,14 @@ interface Effects {
     async: (() => Promise<((state: unknown, ctx: GameContext) => void) | void>)[];
 }
 
+/** Platform actions after which a game starts from scratch, so it should see the latest content. */
+const REFRESHING_ACTIONS = new Set<string>([PLATFORM_ACTIONS.start, PLATFORM_ACTIONS.playAgain, PLATFORM_ACTIONS.backToLobby, PLATFORM_ACTIONS.updateSettings]);
+
 const MAX_HOST_DEVICES = 5;
 const PIN_MAX_FAILURES = 8;
 const PIN_LOCK_MS = 5 * 60_000;
 
-function fail(status: 400 | 403 | 404 | 409 | 410 | 423, error: string) {
+function fail(status: 400 | 403 | 404 | 409 | 410 | 423 | 503, error: string) {
     return { ok: false as const, status, error };
 }
 
@@ -64,6 +67,8 @@ export class GameRoom extends DurableObject<Env> {
     private timers: Record<string, number> = {};
     private version = 0;
     private media = createMediaService(this.env);
+    /** Output of the game's loadContent (e.g. Guess The's catalog from KV). */
+    private content: unknown = undefined;
 
     constructor(ctx: DurableObjectState, env: Env) {
         super(ctx, env);
@@ -73,6 +78,8 @@ export class GameRoom extends DurableObject<Env> {
             this.state = stored.get('state') ?? null;
             this.timers = (stored.get('timers') as Record<string, number>) ?? {};
             this.version = (stored.get('version') as number) ?? 0;
+            const game = this.room && getGame(this.room.gameId);
+            if (game) await this.loadContent(game).catch(err => console.error('Content load failed', err));
         });
     }
 
@@ -102,6 +109,13 @@ export class GameRoom extends DurableObject<Env> {
             players: [],
         };
         this.timers = {};
+        try {
+            await this.loadContent(game);
+        } catch (err) {
+            console.error('Content load failed', err);
+            this.room = null;
+            return fail(503, 'Game content is unavailable right now. Try again in a moment.');
+        }
         this.state = this.withContext(game, ctx => game.server.setup(ctx));
         await this.persist();
         return { ok: true, value: { hostToken, pin } };
@@ -236,6 +250,14 @@ export class GameRoom extends DurableObject<Env> {
         }
 
         try {
+            // A game picks up content edits whenever it (re)starts, never mid-question.
+            if (REFRESHING_ACTIONS.has(msg.type)) {
+                const game = getGame(this.room.gameId);
+                if (game) await this.loadContent(game).catch(err => {
+                    console.error('Content refresh failed', err);
+                    if (this.content === undefined) throw new GameError('Game content is unavailable right now. Try again in a moment.');
+                });
+            }
             this.handleAction(viewer, msg.type, msg.payload);
             this.send(ws, { t: 'ack', id: msg.id });
         } catch (err) {
@@ -427,6 +449,10 @@ export class GameRoom extends DurableObject<Env> {
         this.ctx.waitUntil(task);
     }
 
+    private async loadContent(game: RegisteredGame): Promise<void> {
+        if (game.server.loadContent) this.content = await game.server.loadContent(this.env);
+    }
+
     private withContext<T>(game: RegisteredGame, fn: (ctx: GameContext) => T, effects?: Effects): T {
         const room = this.room!;
         const connected = this.connectedIds();
@@ -443,6 +469,7 @@ export class GameRoom extends DurableObject<Env> {
             },
             emit: (event, to) => sink.events.push({ event, to }),
             media: this.media,
+            content: this.content,
             photoKeyOf: id => room.players.find(p => p.id === id)?.photoKey ?? null,
             runAsync: work => sink.async.push(work as Effects['async'][number]),
         };

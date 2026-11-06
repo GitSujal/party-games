@@ -21,7 +21,7 @@ import {
     type Countdown,
     type TallyEntry,
 } from '../../platform/mechanics';
-import words from './content/words.json';
+import content from './content/words.json';
 
 export type Phase = 'waiting' | 'reveal' | 'discussion' | 'voting' | 'results' | 'finished';
 export type ImposterRole = 'imposter' | 'genuine';
@@ -33,6 +33,12 @@ type Ctx = GameContext<ImposterSettings>;
 export interface ImposterState {
     phase: Phase;
     word: string | null;
+    /** Category id of the current word. Only its name is ever sent, and only while `categoryShown`. */
+    category: string | null;
+    /** The host chose to reveal the category (a hint for everyone, imposters included). */
+    categoryShown: boolean;
+    /** Categories the host switched off. Carried across games in the room. */
+    disabled: string[];
     usedWords: string[];
     /** Participants of the current game, in join order. Late joiners spectate. */
     participants: string[];
@@ -53,7 +59,14 @@ export interface ImposterState {
     countdown: Countdown | null;
 }
 
-const WORDS: string[] = words.words;
+interface WordCategory {
+    id: string;
+    name: string;
+    words: string[];
+}
+
+/** Secret: the words. Client code only ever receives category names and counts, via view(). */
+const CATEGORIES: WordCategory[] = content.categories;
 const DISCUSSION_TIMER = 'discussion';
 
 function aliveIds(state: ImposterState): string[] {
@@ -73,15 +86,24 @@ export function winnerOf(state: ImposterState): Winner | null {
     return null;
 }
 
+/** Every word of the categories the host left on. */
+function wordPool(state: Pick<ImposterState, 'disabled'>): { word: string; category: string }[] {
+    return CATEGORIES.filter(c => !state.disabled.includes(c.id)).flatMap(c => c.words.map(word => ({ word, category: c.id })));
+}
+
 function pickWord(state: ImposterState, ctx: Ctx): string {
-    let pool = WORDS.filter(w => !state.usedWords.includes(w) && w !== state.word);
+    const all = wordPool(state);
+    if (all.length === 0) throw new GameError('Pick at least one category');
+    let pool = all.filter(e => !state.usedWords.includes(e.word) && e.word !== state.word);
     if (pool.length === 0) {
         state.usedWords = [];
-        pool = WORDS.filter(w => w !== state.word);
+        pool = all.filter(e => e.word !== state.word);
     }
-    const word = ctx.random.pick(pool);
-    state.usedWords.push(word);
-    return word;
+    // A pool of one word that is already in play: reuse it rather than fail.
+    const pick = ctx.random.pick(pool.length ? pool : all);
+    state.usedWords.push(pick.word);
+    state.category = pick.category;
+    return pick.word;
 }
 
 function beginDiscussion(state: ImposterState, ctx: Ctx): void {
@@ -131,6 +153,9 @@ function view(state: ImposterState, viewer: Viewer) {
                   alive: state.alive[me],
               }
             : null,
+        // A hint everyone gets once the host shows it. Never the word itself.
+        category: state.categoryShown ? (CATEGORIES.find(c => c.id === state.category)?.name ?? null) : null,
+        categories: CATEGORIES.map(c => ({ id: c.id, name: c.name, enabled: !state.disabled.includes(c.id), words: c.words.length })),
         voting: state.ballot
             ? {
                   voters: state.ballot.voters,
@@ -155,11 +180,16 @@ function view(state: ImposterState, viewer: Viewer) {
 export type ImposterView = ReturnType<typeof view>;
 
 const vote = z.object({ targetId: z.string() });
+const categoryToggle = z.object({ id: z.string(), enabled: z.boolean() });
+const categoryVisible = z.object({ visible: z.boolean() });
 
 export default defineServer<ImposterState, ImposterSettings>({
-    setup: () => ({
+    setup: (_ctx, previous) => ({
         phase: 'waiting',
         word: null,
+        category: null,
+        categoryShown: false,
+        disabled: previous?.disabled ?? [],
         usedWords: [],
         participants: [],
         roles: {},
@@ -175,6 +205,7 @@ export default defineServer<ImposterState, ImposterSettings>({
     start(state, ctx) {
         const ids = ctx.players.map(p => p.id);
         if (ids.length < 3) return 'Imposter needs at least 3 players';
+        if (wordPool(state).length === 0) return 'Pick at least one category';
         const imposterCount = countFromRatio(ids.length, ctx.settings.imposterPercent / 100);
 
         state.participants = ids;
@@ -200,6 +231,29 @@ export default defineServer<ImposterState, ImposterSettings>({
                 assertPhase(state.phase, 'reveal', 'discussion');
                 state.word = pickWord(state, ctx);
                 ctx.emit({ type: 'wordChanged' });
+            },
+        }),
+
+        /** Switch a word category on or off. Applies from the next word; allowed at any time. */
+        setCategory: defineAction<ImposterState, ImposterSettings, z.infer<typeof categoryToggle>>({
+            by: 'host',
+            schema: categoryToggle,
+            handle(state, { id, enabled }) {
+                if (!CATEGORIES.some(c => c.id === id)) throw new GameError('Unknown category');
+                const disabled = enabled ? state.disabled.filter(d => d !== id) : [...new Set([...state.disabled, id])];
+                if (wordPool({ disabled }).length === 0) throw new GameError('Keep at least one category on');
+                state.disabled = disabled;
+            },
+        }),
+
+        /** Show or hide the current word's category on every screen, at any point in a game. */
+        showCategory: defineAction<ImposterState, ImposterSettings, z.infer<typeof categoryVisible>>({
+            by: 'host',
+            schema: categoryVisible,
+            handle(state, { visible }, ctx) {
+                if (state.phase === 'waiting' || !state.category) throw new GameError('There is no word yet');
+                state.categoryShown = visible;
+                if (visible) ctx.emit({ type: 'categoryShown' });
             },
         }),
 

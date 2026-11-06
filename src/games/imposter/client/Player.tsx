@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { GameScreenProps } from '../../../platform/client/types';
 import { Banner, Countdown, RevealCard, VotePicker } from '../../../ui';
-import { Eliminated, WINNER_TEXT, byId, useImposterEvents, type View } from './shared';
+import { CategoryTag, Eliminated, WINNER_TEXT, byId, useImposterEvents, type View } from './shared';
 
 function Screen({ title, sub, children }: { title: ReactNode; sub?: ReactNode; children?: ReactNode }) {
     return (
@@ -46,6 +46,7 @@ export default function Player({ room, game, send }: GameScreenProps<View>) {
 
     return (
         <div className="pg-narrow pg-stack" style={{ ['--gap' as string]: '28px', minHeight: 'calc(100dvh - 64px)' }}>
+            <CategoryTag game={game} />
             {!me.alive && game.phase !== 'finished' && <Banner tone="danger">You've been voted out. No hints from here on.</Banner>}
 
             {game.phase === 'reveal' && (

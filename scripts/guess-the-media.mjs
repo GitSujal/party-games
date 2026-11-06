@@ -2,15 +2,16 @@
 /**
  * Guess The clue media: keeps every clue to a few canonical shapes and records each clue's size.
  *
- *   node scripts/guess-the-media.mjs dims                rebuild src/games/guess-the/dims.json
- *   node scripts/guess-the-media.mjs normalize [--write] report (or apply) the snap below to existing images
+ *   node scripts/guess-the-media.mjs normalize [--write] report (or apply) the snap below to the seed images
+ *   node scripts/guess-the-media.mjs shapes              refresh every clue's size in seed/guess-the/catalog.json
  *
  * Snap: a picture within 8% of a canonical shape (1:1, 4:3, 3:4, 16:9) is centre-cropped to it; anything
  * further off is padded (never stretched) so nothing important is cut. The long edge is capped at 1024px.
  * Pictures are never scaled up. SVGs and videos are left alone (SVG scales; clips are square or 16:9 already).
  *
- * dims.json maps "<category>/<file>" to [width, height]. It is public (it only holds shapes) and the server
- * sends it with each question, so the TV and phones lay clues out correctly before any image has loaded.
+ * Each clue stores its [width, height] (`shape`) in the catalog. The server sends it with the question, so the TV
+ * and phones lay clues out correctly before any image has loaded. This script works on the seed copy
+ * (seed/guess-the); live content is changed through the admin API (scripts/guess-the-catalog.mjs).
  */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
@@ -19,8 +20,8 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-const mediaDir = join(root, 'public/games/guess-the');
-const dimsFile = join(root, 'src/games/guess-the/dims.json');
+const mediaDir = join(root, 'seed/guess-the/assets');
+const catalogFile = join(root, 'seed/guess-the/catalog.json');
 
 export const SHAPES = [1, 4 / 3, 3 / 4, 16 / 9];
 export const CROP_TOLERANCE = 1.08;
@@ -102,15 +103,24 @@ function* mediaFiles() {
     }
 }
 
-export function rebuildDims() {
-    const dims = {};
-    for (const f of mediaFiles()) {
-        const size = probeSize(f.path);
-        if (size) dims[f.key] = size;
-        else console.warn(`! no size for ${f.key}`);
+/** Re-measure every seed clue file and store its size in the seed catalog. */
+export function syncShapes() {
+    const catalog = JSON.parse(readFileSync(catalogFile, 'utf8'));
+    let count = 0;
+    for (const levels of Object.values(catalog.levels)) {
+        for (const level of levels) {
+            for (const clue of level.clues) {
+                if (/^https?:/.test(clue.src)) continue;
+                const size = probeSize(join(mediaDir, clue.src));
+                if (size) {
+                    clue.shape = size;
+                    count++;
+                } else console.warn(`! no size for ${clue.src}`);
+            }
+        }
     }
-    writeFileSync(dimsFile, JSON.stringify(dims, null, 4) + '\n');
-    return dims;
+    writeFileSync(catalogFile, JSON.stringify(catalog, null, 4) + '\n');
+    return count;
 }
 
 function normalizeAll(write) {
@@ -133,12 +143,12 @@ function normalizeAll(write) {
         }
     }
     console.log(write ? `Rewrote ${changed} file(s).` : `${changed} file(s) would change. Re-run with --write to apply.`);
-    if (write) rebuildDims();
+    if (write) syncShapes();
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const [cmd, ...rest] = process.argv.slice(2);
-    if (cmd === 'dims') console.log(`Wrote ${Object.keys(rebuildDims()).length} sizes to src/games/guess-the/dims.json`);
+    if (cmd === 'shapes') console.log(`Updated ${syncShapes()} clue sizes in seed/guess-the/catalog.json`);
     else if (cmd === 'normalize') normalizeAll(rest.includes('--write'));
-    else console.error('Usage: guess-the-media.mjs dims | normalize [--write]');
+    else console.error('Usage: guess-the-media.mjs shapes | normalize [--write]');
 }

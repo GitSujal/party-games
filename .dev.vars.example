@@ -4,3 +4,7 @@
 # Optional. Enables AI character portraits in games that use player selfies.
 # https://aistudio.google.com/app/apikey
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Guess The content admin API (/api/admin/guess-the) and scripts/guess-the-catalog.mjs.
+# Any long random string. In production: npx wrangler secret put ADMIN_TOKEN
+ADMIN_TOKEN=Halloween

@@ -49,7 +49,7 @@ export default function GameDetail() {
     return (
         <div className="pg-container">
             <SiteHeader>
-                <Link to="/" className="pg-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                     <ChevronLeft size={16} /> All games
                 </Link>
             </SiteHeader>
@@ -87,15 +87,18 @@ export default function GameDetail() {
 
                     {HowToPlay && (
                         <section className="pg-rule pg-stack" style={{ ['--gap' as string]: '16px' }}>
-                            <h2 className="pg-section-title">How to play</h2>
+                            <h2 className="pg-section-title" style={{ fontSize: '2rem' }}>
+                                How to <span className="pg-hl">play</span>
+                            </h2>
                             <HowToPlay role="host" game={null} />
                         </section>
                     )}
                 </main>
 
                 <aside className="pg-card pg-stack detail__host" style={{ ['--gap' as string]: '24px' }}>
+                    <span className="pg-tape" aria-hidden />
                     <div className="pg-stack" style={{ ['--gap' as string]: '6px' }}>
-                        <h2 style={{ margin: 0, fontSize: 18 }}>Host a room</h2>
+                        <h2 style={{ margin: 0, fontSize: '1.6rem' }}>Host a room</h2>
                         <p className="pg-label-sm" style={{ margin: 0 }}>
                             Open this on the screen everyone can see.
                         </p>

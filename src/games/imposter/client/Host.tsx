@@ -3,7 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import type { GameScreenProps } from '../../../platform/client/types';
 import { PLATFORM_ACTIONS } from '../../../platform/protocol';
 import { Banner, Button, ConfirmButton, Countdown, VoteProgress, VoteResults, useAction } from '../../../ui';
-import { Eliminated, WINNER_TEXT, byId, remainingLine, useImposterEvents, type View } from './shared';
+import { CategoryTag, Eliminated, WINNER_TEXT, byId, remainingLine, useImposterEvents, type View } from './shared';
 
 /** Two-column TV layout: the moment on the left, standings + the host's next action on the right. */
 function Split({ main, side }: { main: ReactNode; side: ReactNode }) {
@@ -38,14 +38,23 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
         </ConfirmButton>
     );
 
+    // Always on offer, so the host can drop the hint whenever the table is stuck.
+    const categoryToggle = (
+        <Button variant="ghost" loading={busy} onClick={() => act('showCategory', { visible: !game.category })}>
+            {game.category ? 'Hide category' : 'Show category'}
+        </Button>
+    );
+
     const side = (action: ReactNode) => (
         <>
             <span className="pg-label-sm" style={{ fontSize: 15 }}>
                 Round {game.round}
             </span>
+            <CategoryTag game={game} />
             <Eliminated game={game} players={players} />
             <div className="pg-stack" style={{ marginTop: 'auto', ['--gap' as string]: '8px' }}>
                 {action}
+                {categoryToggle}
             </div>
         </>
     );
@@ -206,9 +215,11 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
                                 <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em' }}>{remainingLine(result.remaining)}</span>
                             </div>
                         )}
+                        <CategoryTag game={game} />
                         <Eliminated game={game} players={players} />
-                        <div className="pg-stack" style={{ marginTop: 'auto' }}>
+                        <div className="pg-stack" style={{ marginTop: 'auto', ['--gap' as string]: '8px' }}>
                             {action}
+                            {categoryToggle}
                         </div>
                     </>
                 }
@@ -239,11 +250,13 @@ export default function Host({ room, game, send }: GameScreenProps<View>) {
                 }
                 side={
                     <>
+                        <CategoryTag game={game} />
                         <Eliminated game={game} players={players} />
-                        <div style={{ marginTop: 'auto' }}>
+                        <div className="pg-stack" style={{ marginTop: 'auto', ['--gap' as string]: '8px' }}>
                             <Button variant="primary" size="lg" block icon={<RotateCcw size={18} />} loading={busy} onClick={() => act(PLATFORM_ACTIONS.playAgain)}>
                                 Play again
                             </Button>
+                            {categoryToggle}
                         </div>
                     </>
                 }

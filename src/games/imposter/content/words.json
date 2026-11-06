@@ -1,23 +1,34 @@
 {
-    "words": [
-        "Christmas",
-        "Movie",
-        "Beach",
-        "City",
-        "Sydney",
-        "Melbourne",
-        "Airport",
-        "Hotel",
-        "Restaurant",
-        "School",
-        "Hospital",
-        "Library",
-        "Park",
-        "Supermarket",
-        "Gym",
-        "Concert",
-        "Wedding",
-        "Cruise Ship",
-        "Train"
+    "categories": [
+        {
+            "id": "places",
+            "name": "Places",
+            "words": ["Beach", "City", "Airport", "Hotel", "Restaurant", "School", "Hospital", "Library", "Park", "Supermarket", "Gym"]
+        },
+        {
+            "id": "events",
+            "name": "Events",
+            "words": ["Christmas", "Concert", "Wedding", "Movie", "Birthday Party", "Funeral", "Baby Shower", "Halloween"]
+        },
+        {
+            "id": "cities",
+            "name": "Cities",
+            "words": ["Sydney", "Melbourne", "Perth", "Brisbane", "New York", "London", "Paris", "Tokyo", "Los Angeles", "Chicago", "Bali", "Phuket"]
+        },
+        {
+            "id": "animals",
+            "name": "Animals",
+            "words": ["Elephant", "Penguin", "Kangaroo", "Dolphin", "Giraffe", "Octopus", "Owl", "Tiger", "Koala", "Crocodile"]
+        },
+        {
+            "id": "food-and-drink",
+            "name": "Food & Drink",
+            "words": ["Pizza", "Sushi", "Coffee", "Pancakes", "Burger", "Ice Cream", "Tacos", "Chocolate", "Noodles", "Smoothie"]
+        },
+        {
+            "id": "jobs",
+            "name": "Jobs",
+            "words": ["Teacher", "Pilot", "Chef", "Doctor", "Plumber", "Firefighter", "Farmer", "Lawyer", "Dentist", "Photographer"]
+        }
     ]
 }

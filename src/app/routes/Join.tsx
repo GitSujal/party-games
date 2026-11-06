@@ -25,7 +25,7 @@ function PhoneScreen({ children }: { children: React.ReactNode }) {
     return (
         <div className="pg-narrow pg-stack" style={{ ['--gap' as string]: '0px', minHeight: '100dvh', paddingBottom: 32 }}>
             <Link to="/" style={{ fontSize: 14, fontWeight: 600 }}>
-                Party Games
+                Party Games by Data Sparta
             </Link>
             {children}
         </div>

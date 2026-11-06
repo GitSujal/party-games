@@ -42,7 +42,7 @@ export function JoinCodeForm({ autoFocus, inline, label }: { autoFocus?: boolean
             {inline ? (
                 <div className="pg-row" style={{ gap: 8, flexWrap: 'nowrap' }}>
                     {input}
-                    <Button type="submit" variant="ink" size="lg" style={{ minHeight: 52, borderRadius: 10 }} disabled={code.length < 4}>
+                    <Button type="submit" variant="ink" size="lg" disabled={code.length < 4}>
                         Join
                     </Button>
                 </div>
